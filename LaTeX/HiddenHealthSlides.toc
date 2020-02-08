@@ -1,0 +1,12 @@
+\beamer@sectionintoc {1}{Introduction}{2}{0}{1}
+\beamer@subsectionintoc {1}{1}{Background}{2}{0}{1}
+\beamer@subsectionintoc {1}{2}{Naive dynamics of SRHS}{21}{0}{1}
+\beamer@subsectionintoc {1}{3}{Less naive dynamics}{55}{0}{1}
+\beamer@sectionintoc {2}{Model \& Likelihood}{81}{0}{2}
+\beamer@subsectionintoc {2}{1}{Graphical model}{82}{0}{2}
+\beamer@subsectionintoc {2}{2}{Mathematical model}{100}{0}{2}
+\beamer@subsectionintoc {2}{3}{Likelihood function}{121}{0}{2}
+\beamer@sectionintoc {3}{Data \& Results}{157}{0}{3}
+\beamer@subsectionintoc {3}{1}{Datasets}{158}{0}{3}
+\beamer@subsectionintoc {3}{2}{Estimated model(s)}{167}{0}{3}
+\beamer@subsectionintoc {3}{3}{Model extensions}{286}{0}{3}
