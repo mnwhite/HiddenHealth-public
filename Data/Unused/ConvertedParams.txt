@@ -1,0 +1,32 @@
+current_param_vec = np.array([ 
+    2.71307934718,  # 0 Mort0
+    0.0,  # 1 MortSex
+    1.38795430119,  # 2 MortHealth1
+    -0.28760043233,  # 3 MortHealth2
+    0.0,  # 4 MortHealth3
+    0.0,  # 5 MortHealth4
+    0.363813022626,  # 6 MortAge1
+    -7.28229668219,  # 7 MortAge2
+    2.75626963949,  # 8 MortAge3
+    0.0,  # 9 MortAge4
+    -0.71322222151,  # 10 MortHealthAge
+    0.0,  # 11 MortSexAge
+    2.45096532146,  # 12 Corr0
+    4.73340300584,  # 13 CorrAge1
+    -16.1153921612,  # 14 CorrAge2
+    19.6829338834,  # 15 CorrAge3
+    0.0,  # 16 CorrAge4
+    7.79200883996,  # 17 Health0
+    0.0,  # 18 HealthSex
+    0.826488208455,  # 19 HealthAge1
+    -2.05668016265,  # 20 HealthAge2
+    1.58829564047,  # 21 HealthAge3
+    -0.532480512408,  # 22 HealthAge4
+    0.0,  # 23 HealthAgeSex
+    9.02812911869,  # 24 xInitMean
+    3.14145412844,  # 25 xInitStd
+    0.511546047557,  # 26 SRHS_Coeff
+    1.60175497905,  # 27 SRHS_Cut2
+    1.79948622392,  # 28 SRHS_Cut3
+    1.73810590583,  # 29 SRHS_Cut4
+]) 
