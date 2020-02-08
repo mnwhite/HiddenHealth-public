@@ -16,7 +16,7 @@ from ChangeCoefficients import changeTaylorToPoly, convertOldToNewParams
 import EvalCount
 
 # Import parameter information
-from CrossDataWomenParams import data_file, sex_list, T_max, age_col, sex_col, weight_col, data_init_col,\
+from MEPSwomenOver18Params import data_file, sex_list, T_max, age_col, sex_col, weight_col, data_init_col,\
            measure_count, category_counts, measure_names, wave_length, current_param_vec,\
            age_min, age_max, age_incr, x_min, x_max, x_count, which_indices,\
            source_name, figure_label, param_file_name
@@ -2631,8 +2631,8 @@ if __name__ == '__main__':
     make_figs = False                  # Produce selected figures and display on screen
     save_figs = False                  # Save those figures to disk (only relevant if ^^ is True)
     vary_one_param = False             # Produce a simple plot of LL function vs one model parameter
-    estimate_model = True              # Estimate structural model parameters
-    calc_std_errs = True               # Calculate standard errors by inverting the Hessian of the LL func
+    estimate_model = False             # Estimate structural model parameters
+    calc_std_errs = False              # Calculate standard errors by inverting the Hessian of the LL func
     make_predicted_health_data = False # Make a file with predicted latent health (squared) by age and SRHS sequence
     est_age_group_params = False       # DEPRECATED: Estimate model on a small range of ages from the MEPS
     convert_param_format = False       # DEPRECATED: Convert between parameter formats, only needed in past
