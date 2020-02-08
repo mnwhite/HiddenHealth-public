@@ -1,0 +1,66 @@
+\begin{table}\label{CrossParams}
+\scriptsize
+\begin{center}
+\caption{This is a test table, put real title here later}
+\newsavebox{\CrossParamsBox}
+\sbox{\CrossParamsBox}{  
+\begin{tabular}{clc}
+\hline \hline
+Param & Description & Women \\
+\hline
+$\theta_{0}$ & Mortality probit: constant term & 4.281 \\
+ & & (0.353) \\
+$\theta_{x1}$ & Mortality probit: linear coefficient on health & 0.114 \\
+ & & (1.27e-2) \\
+$\theta_{x2}$ & Mortality probit: quadratic coefficient on health & -3.04e-3 \\
+ & & (4.62e-4) \\
+$\theta_{j1}$ & Mortality probit: linear coefficient on age & -8.51e-2 \\
+ & & (1.63e-2) \\
+$\theta_{j2}$ & Mortality probit: quadratic coefficient on age & 1.29e-3 \\
+ & & (2.50e-4) \\
+$\theta_{j3}$ & Mortality probit: cubic coefficient on age & -8.81e-6 \\
+ & & (1.27e-6) \\
+$\theta_{xj}$ & Mortality probit: coefficient on age$\times$health & 2.10e-4 \\
+ & & (1.63e-4) \\
+$\gamma_{0}$ & Correlation factor: constant term & 0.841 \\
+ & & (0.197) \\
+$\gamma_{j1}$ & Correlation factor: linear coefficient on age & 0.145 \\
+ & & (1.24e-2) \\
+$\gamma_{j2}$ & Correlation factor: quadratic coefficient on age & -2.41e-3 \\
+ & & (2.43e-4) \\
+$\gamma_{j3}$ & Correlation factor: cubic coefficient on age & 1.24e-5 \\
+ & & (1.51e-6) \\
+$\beta_{0}$ & Expected health: constant term & 22.292 \\
+ & & (1.574) \\
+$\beta_{j1}$ & Expected health: linear coefficient on age & -0.874 \\
+ & & (0.122) \\
+$\beta_{j2}$ & Expected health: quadratic coefficient on age & 1.50e-2 \\
+ & & (3.39e-3) \\
+$\beta_{j3}$ & Expected health: cubic coefficient on age & -7.38e-5 \\
+ & & (4.18e-5) \\
+$\beta_{j4}$ & Expected health: quartic coefficient on age & -2.86e-7 \\
+ & & (2.05e-7) \\
+$\overline{x_0}$ & Mean latent health at model start & 9.930 \\
+ & & (0.117) \\
+$\sigma_{0}$ & Stdev latent health at model start & 3.505 \\
+ & & (6.42e-2) \\
+$\alpha_1$ & SRHS: Linear coefficient on latent health & 0.475 \\
+ & & (5.56e-3) \\
+$\chi_2$ & SRHS: Cut b/w reporting ``fair'' and ``good'' & 1.801 \\
+ & & (9.74e-3) \\
+$\chi_3$ & SRHS: Cut b/w reporting ``good'' and ``very good'' & 2.003 \\
+ & & (8.01e-3) \\
+$\chi_4$ & SRHS: Cut b/w reporting ``very good'' and ``excellent'' & 2.156 \\
+ & & (8.26e-3) \\
+\hline\hline
+\end{tabular}
+ } 
+ \usebox{\CrossParamsBox}  
+\settowidth\TableWidth{\usebox{\CrossParamsBox}} % Calculate width of table so notes will match  
+\vspace{0.0cm} \parbox{\TableWidth}{
+  \begin{flushleft}
+\textbf{Women:} blah blah
+  \end{flushleft}
+}
+\end{center}
+\end{table}

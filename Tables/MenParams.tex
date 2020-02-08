@@ -1,0 +1,72 @@
+\begin{table}[H]
+\footnotesize
+\singlespace
+\begin{center}
+\caption{Estimated Parameters for Men}\label{tab:MenParams}
+\newsavebox{\MenParamsBox}
+\sbox{\MenParamsBox}{  
+\begin{tabular}{clcccc}
+\hline \hline
+Param & \multicolumn{1}{c}{Description} & MEPS & HRS & PSID & Mixed \\
+\hline
+$\theta_{0}'$ & Mortality probit: level at model start $\underline{j}$ & 2.488 & 2.062 & 2.279 & 2.338 \\
+ & & (5.69e-2) & (5.83e-2) & (7.14e-2) & (5.46e-2) \\
+$\theta_{h1}'$ & Mortality probit: first derivative w.r.t health at $\Health=0$ & 7.24e-2 & 0.145 & 9.83e-2 & 0.101 \\
+ & & (1.18e-2) & (1.57e-2) & (7.88e-3) & (6.10e-3) \\
+$\theta_{h2}'$ & Mortality probit: second derivative w.r.t health at $\Health=0$ & 2.47e-2 & 8.91e-3 & 3.95e-3 & 1.06e-2 \\
+ & & (3.54e-3) & (2.20e-3) & (2.68e-3) & (1.88e-3) \\
+$\theta_{h3}'$ & Mortality probit: third derivative w.r.t health at $\Health=0$ & -5.98e-3 & -2.61e-3 & -1.27e-3 & -2.60e-3 \\
+ & & (5.93e-4) & (3.90e-4) & (4.14e-4) & (2.97e-4) \\
+$\theta_{j1}'$ & Mortality probit: first derivative w.r.t age at $\underline{j}$ & 1.02e-2 & -4.67e-2 & -9.97e-3 & -1.10e-2 \\
+ & & (2.68e-3) & (8.64e-3) & (3.24e-3) & (1.65e-3) \\
+$\theta_{j2}'$ & Mortality probit: second derivative w.r.t age at $\underline{j}$ & -1.25e-3 & 2.11e-3 & -8.12e-5 & 1.41e-5 \\
+ & & (1.57e-4) & (7.90e-4) & (1.35e-4) & (2.08e-5) \\
+$\theta_{j3}'$ & Mortality probit: third derivative w.r.t age at $\underline{j}$ & 1.69e-5 & -1.30e-4 & -1.68e-5 & -1.75e-5 \\
+ & & (4.94e-6) & (3.27e-5) & (4.12e-6) & (1.35e-6) \\
+$\theta_{hj}$ & Mortality probit: coefficient on age$\times$health & 6.05e-4 & -5.33e-4 & 4.06e-5 & 4.88e-5 \\
+ & & (1.41e-4) & (2.10e-4) & (6.15e-5) & (5.78e-5) \\
+$\gamma_{0}'$ & Correlation factor: level at model start $\underline{j}$ & 2.500 & 3.388 & 2.985 & 2.678 \\
+ & & (2.57e-2) & (6.77e-2) & (9.00e-2) & (6.51e-2) \\
+$\gamma_{j1}'$ & Correlation factor: first derivative w.r.t age at $\underline{j}$ & 2.28e-2 & 1.15e-2 & 7.27e-2 & 7.06e-2 \\
+ & & (1.38e-3) & (4.02e-3) & (7.40e-3) & (7.72e-3) \\
+$\gamma_{j2}'$ & Correlation factor: second derivative w.r.t age at $\underline{j}$ & 2.01e-4 & 0.00 & -2.03e-3 & -3.22e-3 \\
+ & & (7.45e-5) & (---) & (2.50e-4) & (5.13e-4) \\
+$\gamma_{j3}'$ & Correlation factor: third derivative w.r.t age at $\underline{j}$ & -2.90e-5 & 0.00 & 0.00 & 7.26e-5 \\
+ & & (2.92e-6) & (---) & (---) & (1.50e-5) \\
+$\beta_{0}'$ & Expected health: level at model start $\underline{j}$ & 7.751 & 3.188 & 10.834 & 10.190 \\
+ & & (0.103) & (0.445) & (0.644) & (0.390) \\
+$\beta_{j1}'$ & Expected health: first derivative w.r.t age at $\underline{j}$ & 0.142 & 6.02e-2 & -0.486 & -0.202 \\
+ & & (2.05e-2) & (5.48e-2) & (8.49e-2) & (7.92e-2) \\
+$\beta_{j2}'$ & Expected health: second derivative w.r.t age at $\underline{j}$ & -2.86e-2 & -2.29e-2 & 5.40e-3 & -9.55e-3 \\
+ & & (2.79e-3) & (4.42e-3) & (3.10e-3) & (1.03e-2) \\
+$\beta_{j3}'$ & Expected health: third derivative w.r.t age at $\underline{j}$ & 2.11e-3 & 0.00 & 0.00 & 1.68e-3 \\
+ & & (2.11e-4) & (---) & (---) & (7.96e-4) \\
+$\beta_{j4}'$ & Expected health: fourth derivative w.r.t age at $\underline{j}$ & -6.96e-5 & 0.00 & 0.00 & -8.51e-5 \\
+ & & (7.07e-6) & (---) & (---) & (2.76e-5) \\
+$\mu_0$ & Mean of latent health at $\underline{j}$ & 9.723 & 8.068 & 11.468 & 11.220 \\
+ & & (9.86e-2) & (0.152) & (0.231) & (0.153) \\
+$\sigma_{0}$ & Standard deviation of latent health at $\underline{j}$ & 2.912 & 4.509 & 3.982 & 3.743 \\
+ & & (4.42e-2) & (9.98e-2) & (0.122) & (8.47e-2) \\
+$\alpha_1$ & SRHS: Linear coefficient on latent health & 0.513 & 0.440 & 0.411 & 0.440 \\
+ & & (5.88e-3) & (9.12e-3) & (9.20e-3) & (6.15e-3) \\
+$\chi_2$ & SRHS: Cut b/w reporting ``fair'' and ``good'' & 1.550 & 1.654 & 1.597 & 1.682 \\
+ & & (7.77e-3) & (1.59e-2) & (2.03e-2) & (1.05e-2) \\
+$\chi_3$ & SRHS: Cut b/w reporting ``good'' and ``very good'' & 3.344 & 3.398 & 3.460 & 3.579 \\
+ & & (1.09e-2) & (2.44e-2) & (2.88e-2) & (1.53e-2) \\
+$\chi_4$ & SRHS: Cut b/w reporting ``very good'' and ``excellent'' & 4.983 & 5.395 & 5.383 & 5.549 \\
+ & & (1.40e-2) & (3.51e-2) & (3.82e-2) & (2.04e-2) \\
+\hline\hline
+\end{tabular}
+ } 
+ \usebox{\MenParamsBox}  
+\settowidth\TableWidth{\usebox{\MenParamsBox}} % Calculate width of table so notes will match  
+\vspace{0.0cm} \parbox{\TableWidth}{
+  \begin{flushleft}
+\textbf{MEPS:} Men ages 18 to 84 in Panels 1-20 (1996-2017); six month periods.\\
+\textbf{HRS:} Men ages 50 to 90 (1996-2016); one year periods.\\
+\textbf{PSID:} Men ages 23 to 90, as head or spouse (1997-2017); one year periods.\\
+\textbf{Mixed:} MEPS (SAQ) men ages 18-84 (2000-2017), HRS men ages 50-90 (1996-2016), and PSID men ages 23-90 (1997-2017); one year periods.\\
+  \end{flushleft}
+}
+\end{center}
+\end{table}

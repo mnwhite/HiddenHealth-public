@@ -1,0 +1,34 @@
+\begin{table}[ht]
+\normalsize
+\begin{center}
+\caption{Dataset Summary Statistics by Specification}\label{table:DataSummary}
+\newsavebox{\DataSummaryBox}
+\sbox{\DataSummaryBox}{  
+\begin{tabular}{ccccccccrrcc}
+\hline \hline
+
+\rule{0pt}{2.5ex} Data & Sex & Start & End & Freq & $\underline{j}$ & $\overline{j}$ & $\hat{j}$ & \multicolumn{1}{c}{Inds} & \multicolumn{1}{c}{Obs} & \multicolumn{1}{c}{Deaths} & \multicolumn{1}{c}{5+ obs?} \\
+\hline
+MEPS & F & 1996 & 2016 & 6 mo & 18 & 86.5 & 0.5 & 126,486 & 601,713 & 1,168 & 89.5\% \\
+MEPS & M & 1996 & 2016 & 6 mo & 18 & 86.5 & 0.5 & 110,044 & 518,577 & 1,314 & 87.7\%  \\
+HRS & F & 1996 & 2016 & 2 yr & 50 & 115 & 1.0 & 20,108 & 107,542 & 5,794 & 50.1\% \\
+HRS & M & 1996 & 2016 & 2 yr & 50 & 115 & 1.0 & 16,094 & 81,091 & 5,286 & 46.7\%  \\
+PSID & F & 1997 & 2017 & 2 yr & 23 & 110 & 1.0 & 11,787 & 69,329 & 1,012 & 55.6\%  \\
+PSID & M & 1997 & 2017 & 2 yr & 23 & 110 & 1.0 & 10,791 & 58,316 & 995 & 50.0\% \\
+Mixed & F & 1996 & 2017 & varies & 18 & 115 & 1.0 & 120,720 & 343,461 & 6,918 & 13.4\%  \\
+Mixed & M & 1996 & 2017 & varies & 18 & 115 & 1.0 & 102,965 & 281,681 & 6,568 & 12.3\% \\
+\hline\hline
+\end{tabular}
+} 
+\usebox{\DataSummaryBox}  
+\settowidth\TableWidth{\usebox{\DataSummaryBox}} % Calculate width of table so notes will match  
+\vspace{0.0cm} \parbox{\TableWidth}{
+\begin{flushleft}
+	\textbf{NB:} The Mixed specifications combine observations from MEPS-SAQ, HRS, and PSID.  Respondents
+	from the MEPS-SAQ represent about two-thirds of individuals in the Mixed specifications, but
+	have no more than two observed waves.  Among respondents from the HRS or PSID in the Mixed
+	specifications, about half have at least five observations.
+\end{flushleft}
+}
+\end{center}
+\end{table}
