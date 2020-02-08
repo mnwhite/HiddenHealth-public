@@ -6,6 +6,10 @@ on Windows, but I am told that pip install does not work correctly on Mac or Lin
 sometimes.  Package files from https://github.com/Samsung/opencl4py can be copied right
 into your Python package library directory and will work correctly.
 
+NOTE: The project was conducted entirely in Python 2.7, for which official support
+ended about six weeks ago (Jan 1, 2020).  The code should work in Python 3.6 and higher,
+but I will test this to verify soon.
+
 Below is a list of file descriptions in this directory.
 
 MAIN CODE FILES
