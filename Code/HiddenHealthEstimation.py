@@ -496,8 +496,8 @@ def makeTransProbArrayCL(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAg
     queue[d].write_buffer(CorrVec_buf[d],CorrVec)
     queue[d].write_buffer(ExpHealthBase_buf[d],ExpHealthBase)
     queue[d].write_buffer(Parameters_buf[d],parameters_temp)
-    queue[d].execute_kernel(TransPrbKernel[d], [(prob_size/32 + 1)*32], [32])
-    queue[d].execute_kernel(TransPrbKernel2[d], [(prob_size_alt/32 + 1)*32], [32])
+    queue[d].execute_kernel(TransPrbKernel[d], [(prob_size//32 + 1)*32], [32])
+    queue[d].execute_kernel(TransPrbKernel2[d], [(prob_size_alt//32 + 1)*32], [32])
     queue[d].read_buffer(TransPrbArray_buf[d],temp_out)
     
     return np.reshape(temp_out,(2,age_count_A,x_count,x_count))

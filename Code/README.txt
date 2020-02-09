@@ -7,8 +7,8 @@ sometimes.  Package files from https://github.com/Samsung/opencl4py can be copie
 into your Python package library directory and will work correctly.
 
 NOTE: The project was conducted entirely in Python 2.7, for which official support
-ended about six weeks ago (Jan 1, 2020).  The code should work in Python 3.6 and higher,
-but I will test this to verify soon.
+ended about six weeks ago (Jan 1, 2020).  The main estimation code runs correctly in
+Python 3.7, but I have not yet tested all figure-producing code in Py3.
 
 Below is a list of file descriptions in this directory.
 
