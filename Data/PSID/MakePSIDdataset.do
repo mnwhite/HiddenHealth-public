@@ -751,10 +751,32 @@ gen age = firstob - birthyear
 drop if x1 == 0
 keep UID weight male age x*
 order UID weight male age x*
+rename UID ID
+rename male sex
+
+* Adjust weights to be mean zero
+egen weightsum = sum(weight)
+replace weight = weight/weightsum * _N
+drop weightsum
 
 * Save data as dta file
-sort UID
+sort ID
 save PSIDall.dta, replace
+
+
+* Make estimation data file for everyone (biannual data)
+gen source = "PSID"
+gen isodd = mod(age,2)
+gen iseven = 1 - isodd
+replace age = age - 1 if iseven == 1
+drop iseven isodd
+order source ID weight
+outsheet using ..\Estimation\PSIDallBiannual.txt, replace noname nolabel
+keep source ID weight sex age x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11
+save PSIDallB.dta, replace
+
+clear all
+use PSIDall.dta
 
 gen x1a = .
 gen x2a = .
@@ -766,16 +788,16 @@ gen x7a = .
 gen x8a = .
 gen x9a = .
 gen x10a = .
-order UID weight male age x1 x1a x2 x2a x3 x3a x4 x4a x5 x5a x6 x6a x7 x7a x8 x8a x9 x9a x10 x10a x11
+order ID weight sex age x1 x1a x2 x2a x3 x3a x4 x4a x5 x5a x6 x6a x7 x7a x8 x8a x9 x9a x10 x10a x11
 
 * Make estimation data file for everyone (annual data)
 outsheet using ..\Estimation\PSIDallAnnual.txt, replace noname nolabel
 
 gen source = "PSID"
-tostring UID, gen(id)
-drop UID
+tostring ID, gen(id)
+drop ID
 order source id weight
-drop if age < 24
+*drop if age < 24
 sort source id
 save PSIDforMergeAlt.dta, replace
 
@@ -812,14 +834,14 @@ gen x7c = .
 gen x8c = .
 gen x9c = .
 gen x10c = .
-order UID weight male age x1 x1a x1b x1c x2 x2a x2b x2c x3 x3a x3b x3c x4 x4a x4b x4c x5 x5a x5b x5c x6 x6a x6b x6c x7 x7a x7b x7c x8 x8a x8b x8c x9 x9a x9b x9c x10 x10a x10b x10c x11
+order ID weight sex age x1 x1a x1b x1c x2 x2a x2b x2c x3 x3a x3b x3c x4 x4a x4b x4c x5 x5a x5b x5c x6 x6a x6b x6c x7 x7a x7b x7c x8 x8a x8b x8c x9 x9a x9b x9c x10 x10a x10b x10c x11
 
 * Make estimation data file for everyone (semi-annual data)
 outsheet using ..\Estimation\PSIDallSemiannual.txt, replace noname nolabel
 
 gen source = "PSID"
-tostring UID, gen(id)
-drop UID
+tostring ID, gen(id)
+drop ID
 order source id weight
 drop if age < 24
 sort source id

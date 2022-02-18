@@ -1,0 +1,63 @@
+\begin{table}[H]
+\footnotesize
+\singlespace
+\begin{center}
+\caption{Estimated Parameters for Women}\label{tab:WomenParamsXXX}
+\newsavebox{\WomenParamsXXXBox}
+\sbox{\WomenParamsXXXBox}{  
+\begin{tabular}{clcc}
+\hline \hline
+Param & \multicolumn{1}{c}{Description} & HRS & PSID \\
+\hline
+$\theta_{0}'$ & Mortality probit: level at model start $\underline{j}$ & 2.467 (5.97e-2) & 2.132 (0.123) \\
+ & $\theta_{s}$ & Mortality probit: shifter for men & 0.00 (---) & 0.00 (---) \\
+ & $\theta_{h1}'$ & Mortality probit: first derivative w.r.t health at $\Health=0$ & 0.125 (7.00e-3) & 0.174 (2.28e-2) \\
+ & $\theta_{h2}'$ & Mortality probit: second derivative w.r.t health at $\Health=0$ & -6.40e-3 (1.32e-3) & -9.57e-3 (1.75e-3) \\
+ & $\theta_{h3}'$ & Mortality probit: third derivative w.r.t health at $\Health=0$ & 0.00 (---) & 0.00 (---) \\
+ & $\theta_{j1}'$ & Mortality probit: first derivative w.r.t age at $\underline{j}$ & -5.78e-2 (7.95e-3) & 1.56e-2 (5.16e-3) \\
+ & $\theta_{j2}'$ & Mortality probit: second derivative w.r.t age at $\underline{j}$ & 2.70e-3 (6.57e-4) & -1.07e-3 (1.12e-4) \\
+ & $\theta_{j3}'$ & Mortality probit: third derivative w.r.t age at $\underline{j}$ & -1.48e-4 (2.50e-5) & 0.00 (---) \\
+ & $\theta_{hj}$ & Mortality probit: coefficient on age$\times$health & -3.03e-5 (2.13e-5) & -5.84e-4 (2.63e-4) \\
+ & $\theta_{js}$ & Mortality probit: coefficient on age, adjustment for men & 0.00 (---) & 0.00 (---) \\
+ & $\gamma_{0}'$ & Correlation factor: level at model start $\underline{j}$ & 3.669 (6.78e-2) & 3.469 (0.102) \\
+ & $\gamma_{j1}'$ & Correlation factor: first derivative w.r.t age at $\underline{j}$ & 5.42e-3 (3.44e-3) & 2.49e-2 (4.12e-3) \\
+ & $\gamma_{j2}'$ & Correlation factor: second derivative w.r.t age at $\underline{j}$ & 0.00 (---) & 0.00 (---) \\
+ & $\gamma_{j3}'$ & Correlation factor: third derivative w.r.t age at $\underline{j}$ & 0.00 (---) & 0.00 (---) \\
+ & $\beta_{0}'$ & Expected health: level at model start $\underline{j}$ & 1.248 (0.804) & 11.142 (0.920) \\
+ & $\beta_{s}$ & Expected health: shifter for men & 0.00 (---) & 0.00 (---) \\
+ & $\beta_{j1}'$ & Expected health: first derivative w.r.t age at $\underline{j}$ & 0.390 (0.144) & -0.885 (0.164) \\
+ & $\beta_{j2}'$ & Expected health: second derivative w.r.t age at $\underline{j}$ & -7.18e-2 (1.56e-2) & 6.73e-2 (1.45e-2) \\
+ & $\beta_{j3}'$ & Expected health: third derivative w.r.t age at $\underline{j}$ & 3.15e-3 (7.10e-4) & -3.19e-3 (6.29e-4) \\
+ & $\beta_{j4}'$ & Expected health: fourth derivative w.r.t age at $\underline{j}$ & 0.00 (---) & 0.00 (---) \\
+ & $\beta_{js}$ & Expected health: coefficient on age, adjustment for men & 0.00 (---) & 0.00 (---) \\
+ & $\mu_\{h0\}$ & Mean of latent health at $\underline{j}$ & 7.859 (0.184) & 10.801 (0.305) \\
+ & $\sigma_\{h0\}$ & Standard deviation of latent health at $\underline{j}$ & 4.341 (0.119) & 3.555 (0.124) \\
+ & $(1-\kappa)$ & Health shocks: probability of small shock & 0.956 (7.53e-3) & 0.941 (1.66e-2) \\
+ & $\mu_\{\eta 0\}$ & Health shocks: conditional mean for small shock & 9.18e-2 (8.07e-3) & 6.99e-2 (1.28e-2) \\
+ & $\sigma_\{\eta 0\}$ & Health shocks: conditional stdev for small shock & 0.481 (3.38e-2) & 0.457 (8.31e-2) \\
+ & $\kappa$ & Health shocks: probability of large shock & 4.36e-2 (7.53e-3) & 5.93e-2 (1.66e-2) \\
+ & $\mu__\{\eta 1\}$ & Health shocks: conditional mean for large shock & -2.013 (0.239) & -1.109 (0.214) \\
+ & $\sigma__\{\eta 1\}$ & Health shocks: conditional stdev for large shock & 3.690 (0.221) & 3.499 (0.323) \\
+ & $\Prob(\theta_i=1)$ & Proportion of reporting type 1 individuals & 0.474 (1.76e-2) & 9.82e-2 (2.56e-2) \\
+ & $\sigma_\{x1\}$ & Standard deviation of SRHS shocks for type 1 & 1.059 (3.99e-2) & 1.956 (0.120) \\
+ & $\Prob(\theta_i=2)$ & Proportion of reporting type 2 individuals & 0.430 (2.72e-2) & 0.459 (3.88e-2) \\
+ & $\sigma_\{x2\}$ & Standard deviation of SRHS shocks for type 2 & 0.485 (1.71e-2) & 0.496 (2.35e-2) \\
+ & $\Prob(\theta_i=3)$ & Proportion of reporting type 3 individuals & 9.64e-2 (2.26e-2) & 0.443 (3.08e-2) \\
+ & $\sigma_\{x3\}$ & Standard deviation of SRHS shocks for type 3 & 1.951 (0.104) & 1.074 (5.07e-2) \\
+ & $\alpha_1$ & SRHS: Linear coefficient on latent health & 0.463 (1.18e-2) & 0.413 (1.35e-2) \\
+ & $\chi_2$ & SRHS: Cut b/w reporting ``fair'' and ``good'' & 1.780 (2.26e-2) & 1.714 (3.56e-2) \\
+ & $\chi_3$ & SRHS: Cut b/w reporting ``good'' and ``very good'' & 3.488 (3.42e-2) & 3.595 (5.40e-2) \\
+ & $\chi_4$ & SRHS: Cut b/w reporting ``very good'' and ``excellent'' & 5.511 (4.94e-2) & 5.445 (7.20e-2) \\
+ & \hline\hline
+\end{tabular}
+ } 
+ \usebox{\WomenParamsXXXBox}  
+\settowidth\TableWidth{\usebox{\WomenParamsXXXBox}} % Calculate width of table so notes will match  
+\vspace{0.0cm} \parbox{\TableWidth}{
+  \begin{flushleft}
+\textbf{HRS:} Women ages 50 to 90 (1996-2016); one year periods.\\
+\textbf{PSID:} Women ages 23 to 90, as head or spouse (1997-2017); one year periods.\\
+  \end{flushleft}
+}
+\end{center}
+\end{table}

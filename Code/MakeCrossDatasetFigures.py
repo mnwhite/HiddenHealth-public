@@ -120,9 +120,9 @@ def makeSRHSfigure(dataset_names, data_labels, sex_bool, descr=None):
     plt.xlabel('Age')
     plt.ylabel('Cumulative SRHS share')
     plt.legend(data_labels, loc=9, bbox_to_anchor=(0.5,-0.15), ncol=len(dataset_names))
-    plt.tight_layout(pad=2.5)
+    plt.tight_layout()
     if descr is not None:
-        plt.savefig('../Figures/' + descr + sex_word_B + '.pdf')
+        plt.savefig('../Figures/' + descr + sex_word_B + '.pdf', bbox_inches='tight')
     plt.show()
     
     
@@ -173,11 +173,18 @@ def makeCorrFigure(dataset_names, data_labels, sex_bool, descr=None):
     plt.legend(data_labels, loc=4) 
     plt.tight_layout()
     if descr is not None:
-        plt.savefig('../Figures/' + descr + sex_word_B + '.pdf')
+        plt.savefig('../Figures/' + descr + sex_word_B + '.pdf', bbox_inches='tight')
     plt.show()
     
     
 if __name__ == '__main__':
+    
+    my_datasets = ['HRSover50','PSIDover23']
+    my_labels = ['HRS', 'PSID']
+    makeSRHSfigure(my_datasets, my_labels, False, 'TwoStudySRHSa')
+    makeSRHSfigure(my_datasets, my_labels, True, 'TwoStudySRHSa')
+    
+    breakhere
     
     my_datasets = ['MEPSover18','HRSover50','PSIDover23']
     my_labels = ['MEPS', 'HRS', 'PSID']

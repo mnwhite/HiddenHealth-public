@@ -1,32 +1,39 @@
 current_param_vec = np.array([ 
-    2.78740010159,  # 0 Mort0
+    2.429054009623022,  # 0 Mort0
     0.0,  # 1 MortSex
-    1.27159857052,  # 2 MortHealth1
-    0.579500246898,  # 3 MortHealth2
-    -2.16549261865,  # 4 MortHealth3
+    0.9810844102507245,  # 2 MortHealth1
+    1.098471956702974,  # 3 MortHealth2
+    -3.380038391587822,  # 4 MortHealth3
     0.0,  # 5 MortHealth4
-    -3.16580707635,  # 6 MortAge1
-    10.6334874006,  # 7 MortAge2
-    -41.7030110153,  # 8 MortAge3
+    1.454833595692872,  # 6 MortAge1
+    -13.416179809001013,  # 7 MortAge2
+    17.103340895274712,  # 8 MortAge3
     0.0,  # 9 MortAge4
-    -1.82126824597,  # 10 MortHealthAge
+    3.328827184487464,  # 10 MortHealthAge
     0.0,  # 11 MortSexAge
-    2.60851528982,  # 12 Corr0
-    9.35487508288,  # 13 CorrAge1
-    -50.5392757598,  # 14 CorrAge2
-    120.769057536,  # 15 CorrAge3
+    2.5072432411828274,  # 12 Corr0
+    1.7240325971788277,  # 13 CorrAge1
+    6.122031047450734,  # 14 CorrAge2
+    -34.83264036802574,  # 15 CorrAge3
     0.0,  # 16 CorrAge4
-    10.6914106194,  # 17 Health0
+    8.101739461044978,  # 17 Health0
     0.0,  # 18 HealthSex
-    -3.30196374772,  # 19 HealthAge1
-    0.563131413615,  # 20 HealthAge2
-    0.757005323433,  # 21 HealthAge3
-    -0.539857038509,  # 22 HealthAge4
+    1.256036937983589,  # 19 HealthAge1
+    -2.5650743365614166,  # 20 HealthAge2
+    1.9063591123898738,  # 21 HealthAge3
+    -0.6462166869534741,  # 22 HealthAge4
     0.0,  # 23 HealthAgeSex
-    10.0448930351,  # 24 xInitMean
-    3.63105935751,  # 25 xInitStd
-    0.472222027157,  # 26 SRHS_Coeff
-    1.80242398081,  # 27 SRHS_Cut2
-    1.99957222914,  # 28 SRHS_Cut3
-    2.15216775369,  # 29 SRHS_Cut4
+    10.02654463004765,  # 24 xInitMean
+    2.661054303567986,  # 25 xInitStd
+    -0.7833613238801251,  # 26 HealthShockAvg1
+    1.2502581663562775,  # 27 HealthShockLogStd1
+    -2.7327704321289312,  # 28 HealthShockLogit1
+    -0.7943788010229635,  # 29 SRHSlogStd1
+    0.14746665836630668,  # 30 SRHSlogStd2
+    1.9873004958510958,  # 31 TypeLogit1
+    2.1369980397663504,  # 32 TypeLogit2
+    0.4969885233416651,  # 33 SRHS_Coeff
+    1.7257709087550037,  # 34 SRHS_Cut2
+    1.7821888614228358,  # 35 SRHS_Cut3
+    1.4553633598525808,  # 36 SRHS_Cut4
 ]) 

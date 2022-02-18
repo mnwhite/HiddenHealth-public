@@ -60,5 +60,8 @@ rename genh2 x1
 rename genh4 x1a
 keep source id weight male age x1 x1a
 order source id weight male age x1 x1a
+egen weightsum = sum(weight)
+replace weight = weight/weightsum * _N
+drop weightsum
 sort source id
 save MEPSforMergeAlt.dta, replace

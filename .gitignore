@@ -112,3 +112,6 @@ venv.bak/
 *.bbl
 *.aux
 *.synctex.gz
+*.blg
+*.out
+

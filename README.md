@@ -7,19 +7,20 @@ for more information about running the code or reproducing the datasets.
 ## Abstract
 Most dynamic structural models that include health as a state variable use categorical self-reported
 health status (SRHS) as their sole empirical measure of health. Almost universally, transition
-probabilities among discrete health states are calculated directly from one-period transitions observed
-in panel data, either as simple fractions of respondents or by reduced form methods.  The ``naive
-dynamics'' of SRHS generated from these calculations rapidly deviate from empirical transitions more
-than one period ahead, as the assumption of a Markov(1) process is not satisfied.  Consequently, these
-models are not well calibrated to accurately match the long term dynamics of individual health, and
-quantitative predictions that rely on agents making decisions based on such dynamics might be unreliable.
-As an alternative, I specify a simple model in which SRHS is a noisy measure of a continuous latent
-health state. I estimate the model by maximum likelihood on several panel datasets, exploiting long
-sequences of SRHS rather than simple period-to-period transitions.  I demonstrate that the model is able
-to match both short run and long run SRHS transitions up to twenty years in the future.  Moreover, it
-also fits other observed features of SRHS dynamics, including apparent duration dependence.  Finally, I
-show how the estimation method is compatible with multiple categorical measures of latent health, rather
-than only SRHS, as well as other model extensions.
+probabilities among discrete health states are calculated directly from one-wave-ahead transitions
+observed in panel data, either as simple fractions of respondents or by reduced form methods.  The
+predicted dynamics of SRHS generated from these calculations rapidly deviate from empirical transi-
+tions more than one wave ahead, as the assumption of a Markov(1) process is not satisfied.  Conse-
+quently, these models are not well calibrated to accurately match the long term dynamics of individual
+health, and quantitative predictions that rely on agents making decisions based on such dynamics might
+be unreliable.  As an alternative, this paper specifies a model in which SRHS is a noisy measure of a
+continuous latent health state. I estimate the model by maximum likelihood on several panel datasets,
+exploiting long sequences of SRHS rather than simple wave-to-wave transitions.  I demonstrate that the
+latent health model is able to match both short-run and long-run SRHS transitions up to twenty years
+in the future; it also fits other features of empirical SRHS dynamics, including apparent duration
+dependence. Moreover, the measure of latent health inferred from observations of SRHS is at least as
+good at predicting other outcomes (including mortality, labor supply, and medical expenses) as SRHS
+itself.
 
 ## Directory structure
 

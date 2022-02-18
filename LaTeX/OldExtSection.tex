@@ -1,0 +1,41 @@
+\section{Extensions}\label{sec:Extensions}
+
+While the latent health model is able to fit the short and long run dynamics of SRHS rather well, it is not perfect.  As noted in Section \ref{sec:Fit}, it generates slightly too few individuals who report the same health category in future periods, and particularly too few who \textit{consistently} report the same SRHS over and over again.  Moreover, the model does a poor job matching the fraction of individuals who experience persistently bad health, at least in middle age.  In this section I discuss features that could be added to the model to close the gap with the data and expand its explanatory power.
+
+The phenomenon of survey respondents who repeatedly report the same SRHS over several waves (or all five waves of the MEPS, in Figure \ref{fig:MEPSsameSRHS}) has two simple-- but contradictory-- potential explanations.  First, these individuals might be \textit{more reliable}, in the sense that their reporting errors are smaller; their SRHS would thus be more informative about their latent health.  Alternatively, individuals might have heterogeneous SRHS cut points, with some having a particularly wide interval for one category, predisposing them to report it.  This would mean that SRHS is \textit{less} informative about latent health for such people.  \cite{Crossley02} find that the reliability of SRHS varies by demographics, suggesting that the first hypothesis is better.
+
+The Mixed data model severely under-predicts the fraction of people who will remain ``unhealthy'' (fair or poor) in every one of the next twelve years; the problem is worst among 45-74 year olds (left panels of Figure \ref{fig:SRHSfreqMixedWomen}).  This asymmetry with the model's ability to fit the frequency of ``healthy'' periods conditional on being ``healthy'' at baseline\footnote{The small under-prediction of respondents who consistently report good health would likely be rectified by the introduction of heterogeneity in reporting error variance.} could be explained by a left-skewed distribution of latent health shocks, rather than the normal distribution assumed in the model.  With a long lower tail, more individuals will end up deep into the range of bad health, rather than just barely crossing the boundary, and thus more likely to consistently report an ``unhealthy'' SRHS in future waves.  Estimating age-conditional static latent health models using a mixture of clinical measures and self-reported health outcomes, \cite{Lange12} consistently find that the distribution of health is left skewed; in a dynamic model, this can only occur if the shock distribution itself is left skewed.\footnote{The distribution of latent health in the model is somewhat right skewed, as individuals with lower health are much more likely to die, truncating the lower tail of the distribution.}  This model feature is also appealing from the standpoint of realism: human experience indicates there are far more rapid decreases in health than miraculous recoveries.
+
+Both of these model extensions would be bolstered by evidence from additional measures of health-- e.g.\ the respondent's ability to carry out activities of daily living (ADL)-- rather than only SRHS.  The question of whether respondents disproportionately report the same SRHS period after period because they are more reliable or because they have a broader definition of a particular SRHS category could be resolved by comparing the distribution of these individuals' other health measures to that of the general population.  Likewise, modeling health shocks as left skewed could not be criticized as ad hoc if it were supported by evidence from other measures, replicating the results of Lange and McKee.
+
+Incorporating these features into the latent health model is straightforward.  Under the (strong) assumption that each categorical measure of health $\Report_{i \ell t}$ represents an independent, noisy signal of the latent health state $\Health_{it}$, equations \eqref{HealthInit}, \eqref{Report}, and \eqref{HealthNext} can be rewritten as:\footnote{Equation \eqref{Mortality} and the parameterization of $\Corr_{\Age}$ remain the same in the extended model.}
+\begin{equation}\label{HealthInitAlt}
+\Age_{it}=\AgeMin \Longrightarrow \Health_{it} \sim N(\HealthInitMean, \HealthInitStd^2), \qquad \sigma_{i} \sim
+ \begin{cases}
+ \varsigma & \text{w/ prob } \delta \\
+ \frac{1 - \varsigma \delta}{1-\delta} & \text{w/ prob } 1-\delta
+ \end{cases}.
+\end{equation}
+\begin{equation}\label{ReportAlt}
+\Report^*_{i\ell t} = \LatentParam_{\ell 0} + \LatentParam_{\ell 1} \Health_{it} + \ReportShock_{i\ell t}, \qquad \ReportShock_{i\ell t} \sim
+\begin{cases}
+N(0,\sigma^2_i) & \text{if } \ell=0 \\
+N(0,1) & \text{else}
+\end{cases},
+\end{equation}
+\begin{equation*}\Report_{i\ell t} = 1 + \sum_{k = 1}^{K_\ell-1} \mathbf{1}(\Report^*_{i\ell t} \geq \Cut_{k \ell})  \qquad \text{for}~~ \ell \in \{0,\cdots,L\}. 
+\end{equation*}
+\begin{equation}\label{HealthNextAlt}
+\Health_{it+1} = \Corr_{j} \Health_{it} + (1-\Corr_j) \ExpHealth_\Age + \HealthShock_{it+1}, \qquad \HealthShock_{it+1} \sim 
+\begin{cases}
+N(\underline{\mu}_\HealthShock, \underline{\sigma}_\HealthShock^2) & \text{w/ prob } \kappa \\
+N(\overline{\mu}_\HealthShock, \overline{\sigma}_\HealthShock^2) & \text{w/ prob } 1-\kappa
+\end{cases},
+\end{equation}
+\begin{equation*}
+\overline{\mu}_\HealthShock = \frac{\kappa}{\kappa-1} \underline{\mu}_\HealthShock, \qquad \overline{\sigma}_\HealthShock = \sqrt{\frac{1 - \kappa(\underline{\mu}_\HealthShock^2 + \underline{\sigma}_\HealthShock^2)}{1-\kappa} - \overline{\mu}_\HealthShock^2}.
+\end{equation*}
+
+In the extended model, each individual draws the standard deviation of their SRHS reporting shocks from a binary distribution at model entry; the two possible values are normalized so that reporting shocks have a standard deviation of one on average.  Each categorical measure of health is determined by an ordered probit on a linear equation of latent health, with a standard normal error term (other than for latent health itself, specified as $\ell=0$).\footnote{While the intercept term for SRHS would still be normalized to zero, $\LatentParam_{00}=0$, intercept terms for the other categorical measures would be parameters to estimate.  The bottom cut point for each measure would be set at zero, so each measure adds $K_\ell$ parameters to estimate, its number of categorical responses.}  The distribution of latent health shocks is a mixed normal, the most direct way to generate a skewed distribution; the mean and standard deviation of the upper distribution are normalized so that $\HealthShock$ has a mean of zero and variance of one, to maintain its scale.
+
+Other than the addition of multiple measures of health, the extended model does not require any changes to the core estimation method or code;\footnote{The estimation code in the reproduction archive has already been set up to handle multiple measures.} all other changes can be accounted for by adjusting the precomputational step.  Heterogeneity in SRHS reliability is incorporated by simply doubling the discretization of latent health, with each copy representing one of the two types.  Transitioning between types is impossible, so $\TransPrb_{\Age}$ will be block diagonal, while $\ReportPrb$ will differ between the types \textit{only} for SRHS, not other measures.  The latent health transition probability matrix $\TransPrb_{\Age}$ likewise needs to be recomputed for the mixed normal, but this adds no computational complexity.\footnote{Adding additional categorical health measures will also not significantly add to the computational burden, as the $\mathcal{O}(N^2)$ operation occurs with health transitions between periods, not accounting for observations.}

@@ -9,7 +9,7 @@ inline double NormCDF(
     return CDF;
 }
 
-/* Kernel for calculating transition probabilities between continuous health states */
+/* Kernel for calculating transition probabilities among (discretized) continuous health states */
 __kernel void makeTransPrbArray(
      __global double* TransPrbArray
     ,__global double* xGrid
@@ -21,8 +21,9 @@ __kernel void makeTransPrbArray(
     ) {
 
     /* Unpack the integer inputs */
-    int xCount = IntegerInputs[1];       /* number of points in xGrid */
+    int xCount = IntegerInputs[7];       /* number of points in xGrid */
     int AgeCountA = IntegerInputs[2];    /* number of ages in most arrays */
+    int ShockTypes = IntegerInputs[8];   /* number of normal shocks in mixed distribution */
     int ThreadCount = 2*AgeCountA*xCount*xCount; /* total number of transition probabilities */
     
     /* Initialize this thread's id and get this thread's identity */
@@ -51,17 +52,33 @@ __kernel void makeTransPrbArray(
     double Corr = CorrVec[Age];
     ExpHealthNext = Corr*xNow + (1.0 - Corr)*ExpHealthNext;
 
+    /* Initialize transition probability to zero */
+    double TransPrb = 0.0;
+    double bot_dist;
+    double top_dist;
+    double avg_temp;
+    double std_temp;
+    double prb_temp;
+
     /* Calculate the probability of transitioning from this health state to the next one */
-    double bot_dist = xBot - ExpHealthNext;
-    double top_dist = xTop - ExpHealthNext;
-    if (j == 0) { bot_dist -= 20.0; }
-    if (j == (xCount-1)) { top_dist += 20.0; }
-    double TransPrb;
-    if (bot_dist < 4.0) {
-        TransPrb = NormCDF(top_dist) - NormCDF(bot_dist);
-    }
-    else {
-        TransPrb = NormCDF(-bot_dist) - NormCDF(-top_dist);
+    int n = 0;
+    while (n < ShockTypes) {
+        avg_temp = Parameters[3+n];
+        std_temp = Parameters[3+ShockTypes+n];
+        prb_temp = Parameters[3+2*ShockTypes+n];
+
+        bot_dist = (xBot - (ExpHealthNext + avg_temp)) / std_temp;
+        top_dist = (xTop - (ExpHealthNext + avg_temp)) / std_temp;
+        if (j == 0) { bot_dist -= 20.0; }
+        if (j == (xCount-1)) { top_dist += 20.0; }
+
+        if (bot_dist < 4.0) {
+            TransPrb += (NormCDF(top_dist) - NormCDF(bot_dist))*prb_temp;
+        }
+        else {
+            TransPrb += (NormCDF(-bot_dist) - NormCDF(-top_dist))*prb_temp;
+        }
+        n += 1;
     }
     TransPrbArray[Gid] = TransPrb;
 }
@@ -74,7 +91,7 @@ __kernel void adjustTransPrbArray(
     ) {
 
     /* Unpack the integer inputs */
-    int xCount = IntegerInputs[1];       /* number of points in xGrid */
+    int xCount = IntegerInputs[7];       /* number of points in xGrid */
     int AgeCountA = IntegerInputs[2];    /* number of ages in most arrays */
     int ThreadCount = 2*AgeCountA*xCount;
     
@@ -109,6 +126,7 @@ __kernel void evalHiddenHealthLL(
     ,__global double* HealthDstnNow
     ,__global double* TempDstnNow
     ,__global double* LogLikelihood
+    ,__global double* TypeProb
     ,__global int* AgeVec
     ,__global int* SexVec
     ,__global int* ReportVec
@@ -126,6 +144,8 @@ __kernel void evalHiddenHealthLL(
     int ThreadCount = IntegerInputs[4];  /* number of threads in total */
     int DataStart = IntegerInputs[5];    /* first index in data to touch */
     int DataEnd = IntegerInputs[6];      /* ending index in data to touch */
+    int xCountCond = IntegerInputs[7];   /* number of points in xGrid conditional on type */
+    int TypeCount = xCount / xCountCond; /* number of heterogeneous types */
 
     /* Initialize this thread's id and get this thread's identity */
     int Gid = get_global_id(0); /* global thread id */
@@ -142,9 +162,11 @@ __kernel void evalHiddenHealthLL(
     int OffsetB;                /* offset of array of interest at moment */
     int x;                      /* index of xGrid */
     int xa;                     /* alternate index of xGrid, needed for transitions */
+    int xTop;                   /* temporary top index of the xGrid, used during transitions */
     int t;                      /* current period of individual's data */
     int m;                      /* index of current data measure */
     int j;                      /* index of overall report datum for this individual */
+    int n;                      /* which type number is active (during transition calc only) */
     int hNow;                   /* individual's current reported value */
     int Died;                   /* indicator for whether individual has died */
     double CumLivPrb;           /* cumulative survival probability that has not been included in LL */
@@ -235,7 +257,9 @@ __kernel void evalHiddenHealthLL(
                 for (xa=0; xa < xCount; xa++) {
                     OffsetB = Sex*AgeCountA*xCount*xCount + Age*xCount*xCount + xa*xCount;
                     TempPrb = HealthDstnNow[OffsetA+xa];
-                    for (x=0; x < xCount; x++) {
+                    n = xa / xCountCond;
+                    xTop = (n+1)*xCountCond;
+                    for (x=(n*xCountCond); x < xTop; x++) {
                         TransPrb = TransPrbArray[OffsetB+x];
                         TempDstnNow[OffsetA+x] += TempPrb*TransPrb;
                     }
@@ -249,8 +273,20 @@ __kernel void evalHiddenHealthLL(
             Age += 1;
         }
 
-        /* Store this individual's log likelihood in the output array and move to next */
+        /* Store this individual's log likelihood in the output array */
         LogLikelihood[i] = LL;
+
+        /* Calculate the ex post type probabilities */
+       for (n=0; n < TypeCount ; n++) {
+           TempPrb = 0.0;
+           xTop = (n+1)*xCountCond;
+           for (x=(n*xCountCond); x < xTop; x++) {
+                TempPrb += HealthDstnNow[OffsetA+x];
+           }
+           TypeProb[i*TypeCount+n] = TempPrb;
+        }
+
+        /* Move to the next individual for this thread */
         i += ThreadCount;
     }
 }

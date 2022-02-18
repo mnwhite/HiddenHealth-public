@@ -85,6 +85,9 @@ rename h4 x4
 rename h5 x5
 keep source id weight male age x*
 order source id weight male age x*
+egen weightsum = sum(weight)
+replace weight = weight/weightsum
+drop weightsum
 sort source id
 save MEPSforMerge.dta, replace
 

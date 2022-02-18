@@ -32,10 +32,24 @@ cd ..
 cd HRS
 append using HRSforMergeAlt.dta
 cd ..
+cd Estimation
+outsheet using TwoStudyData.txt, replace noname nolabel
+cd ..
+
 cd MEPS
 append using MEPSforMergeAlt.dta
 cd ..
-
 cd Estimation
 outsheet using CrossStudyDataAlt.txt, replace noname nolabel
+cd ..
+
+clear all
+cd PSID
+use PSIDallB.dta
+cd ..
+cd HRS
+append using HRSallB.dta
+cd ..
+cd Estimation
+outsheet using TwoStudyDataB.txt, replace noname nolabel
 cd ..

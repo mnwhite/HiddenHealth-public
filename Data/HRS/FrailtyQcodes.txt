@@ -1,0 +1,39 @@
+Text	Name	2010	2008	2006	2004	2002	2000	1998	1996
+Health status self report	HealthStatus	C001	C001	C001	C001	C001	1226	1097	769
+Have high blood pressure?	HaveHighBP	C005	C005	C005	C005	C005	1238	1109	781
+Have diabetes?	HaveDiabetes	C010	C010	C010	C010	C010	1245	1116	788
+Have cancer?	HaveCancer	C018	C018	C018	C018	C018	1262	1129	801
+Have lung condition?	HaveLungCond	C030	C030	C030	C030	C030	1279	1146	818
+Have heart condition?	HaveHeartCond	C036	C036	C036	C036	C036	1289	1156	828
+Has ever had a stroke?	HasHadStroke	C053	C053	C053	C053	C053	1309	1176	848
+Have psychiatric problems?	HavePsychProb	C065	C065	C065	C065	C065	1322	1189	861
+Have arthritis?	HaveArthritis	C070	C070	C070	C070	C070	1327	1194	866
+Days spent in bed in last month	DaysInBed	C229	C229	C229	C229	C088	2686	2388	1854
+Difficulty cutting and eating food?	DiffEating	G023	G023	G023	G023	G023	2752	2454	1928
+Difficulty getting dressed?	DiffDressing	G014	G014	G014	G014	G014	2723	2425	1908
+Difficulty getting in/out of bed?	DiffWithBed	G025	G025	G025	G025	G025	2762	2464	1938
+Difficulty using the toilet?	DiffToilet	G030	G030	G030	G030	G030	2775	2477	1951
+Difficulty bathing or showering?	DiffBathing	G021	G021	G021	G021	G021	2742	2444	1918
+Difficulty walking across a room?	DiffCrossRoom	G016	G016	G016	G016	G016	2725	2427	1895
+Difficulty walking several blocks?	DiffWalkBlocks	G001	G001	G001	G001	G001	2689	2391	1858
+Difficulty jogging a mile?	DiffJogMile	G002	G002	G002	G002	G002	2690	2392	1861
+Difficulty walking one block?	DiffWalk1Block	G003	G003	G003	G003	G003	2692	2394	1864
+Difficulty making phone calls?	DiffPhoning	G047	G047	G047	G047	G047	2870	2572	2046
+Difficulty managing money?	DiffMoney	G059	G059	G059	G059	G059	2916	2618	2093
+Difficulty shopping for groceries?	DiffShopping	G044	G044	G044	G044	G044	2865	2567	2041
+Difficulty preparing a hot meal?	DiffCooking	G041	G041	G041	G041	G041	2860	2562	2036
+Difficulty getting up from a chair?	DiffStanding	G005	G005	G005	G005	G005	2698	2400	1870
+Difficulty stooping or kneeling?	DiffStooping	G008	G008	G008	G008	G008	2707	2409	1879
+Difficulty carrying heavy grocery bag?	DiffCarrying	G011	G011	G011	G011	G011	2716	2418	1888
+Difficulty using a map?	DiffUsingMap	G040	G040	G040	G040	G040	2851	2553	2027	2012
+Difficulty taking medications?	DiffTakingRX	G050	G050	G050	G050	G050	2875	2577	2051
+Difficulty climbing flights of stairs?	DiffStairs	G006	G006	G006	G006	G006	2701	2403	1873	
+Difficulty climbing one flight of stairs?	Diff1Stair	G007	G007	G007	G007	G007	2704	2406	1876	
+Difficulty reaching arms upward?	DiffReaching	G009	G009	G009	G009	G009	2710	2412	1882
+Difficulty pushing living room chair?	DiffPushing	G010	G010	G010	G010	G010	2713	2415	1885
+Difficulty picking up a dime?	DiffPickDime	G012	G012	G012	G012	G012	2719	2421	1891
+Weight in pounds	WeightLbs	C139	C139	C139	C139	C139	1425	1291	954
+Height in feet	HeightFeet	C141	C141	C141	C141	C141	1428	1295	958
+Height in inches	HeightInches	C142	C142	C142	C142	C142	1429	1296	959
+Cigarettes per day	CigsPerDay	C118	C118	C118	C118	C118	1401	1268	943
+Packs of cigs per day	PacksPerDay	C119	C119	C119	C119	C119	1402	1269	944

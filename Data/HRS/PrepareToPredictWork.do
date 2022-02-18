@@ -9,7 +9,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 0
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 save HRSpredictWork.dta, replace
 
 clear all
@@ -23,7 +23,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 2
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -38,7 +38,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 4
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -53,7 +53,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 6
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -68,7 +68,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 8
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -83,7 +83,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 10
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -98,7 +98,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 12
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -113,7 +113,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 14
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -128,7 +128,7 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 14
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace
 
@@ -143,6 +143,6 @@ gen R = 0
 replace R = 1 if w1 == 0
 replace age = age + 14
 order weight sex age h1 h2 R
-keep weight sex age h1 h2 R
+keep weight sex age h1 h2 R w0
 append using HRSpredictWork.dta
 save HRSpredictWork.dta, replace

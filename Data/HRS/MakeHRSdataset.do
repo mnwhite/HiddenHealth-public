@@ -767,8 +767,30 @@ replace x11 = . if (x11 == 8) | (x11 == 9)
 drop if x1 == 0
 drop if x1 == .
 keep ID weight sex age x* e*
+
+* Adjust weights to be mean zero
+egen weightsum = sum(weight)
+replace weight = weight/weightsum * _N
+drop weightsum
+
 sort ID
 save HRSall.dta, replace
+
+
+* Make estimation data file for everyone (biannual data)
+gen source = "HRS"
+gen isodd = mod(age,2)
+gen iseven = 1 - isodd
+replace age = age - 1 if iseven == 1
+drop iseven isodd
+order source ID weight
+outsheet using ..\Estimation\HRSallBiannual.txt, replace noname nolabel
+keep source ID weight sex age x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11
+save HRSallB.dta, replace
+
+clear all
+use HRSall.dta
+
 
 gen x1a = .
 gen x2a = .
@@ -790,8 +812,9 @@ gen source = "HRS"
 tostring ID, gen(id)
 drop ID
 rename sex male
+
 order source id weight
-drop if age < 50
+*drop if age < 50
 sort source id
 save HRSforMergeAlt.dta, replace
 

@@ -26,7 +26,7 @@ EstimationProgress.txt : The main estimation code writes the latest parameters t
     the estimation is going in the parameter space.
 
 USactuarial.txt : Tab-delimited text file with Social Security Administration mortality
-    rates.  I think this is a copy-paste from the 2017 table, and I really should know.
+    rates.  This is a copy-paste from the 2013 table.
 
 Results/ : Subdirectory where model results are written, including parameter estimates
     (with standard errors) and model-predicted latent health values for every combination

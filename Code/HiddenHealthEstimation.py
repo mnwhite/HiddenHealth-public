@@ -1,7 +1,6 @@
 '''
 This module estimates the "hidden health" model using maximum likelihood.
 '''
-
 # Import functions from other files
 import numpy as np
 from scipy.stats import norm
@@ -10,15 +9,16 @@ from copy import copy
 from time import time
 import matplotlib.pyplot as plt
 import opencl4py as cl
-from Utilities import getPercentiles, drawDiscrete, minimizeNelderMead, calcHessian
-from MakeTables import saveParamsAndStdErrs, parameterTransformation, standardErrorsFromCovarMatrix
+from Utilities import getPercentiles, drawDiscrete, calcHessian, calcDeltaMethodStdErrs
+from Optimizers import minimizeBFGS
+from MakeTables import saveTableParamsAndStdErrs, saveParamsAndCovarMatrix,readParamsAndCovarMatrix
 from ChangeCoefficients import changeTaylorToPoly, convertOldToNewParams
 import EvalCount
 
 # Import parameter information
-from MEPSwomenOver18Params import data_file, sex_list, T_max, age_col, sex_col, weight_col, data_init_col,\
-           measure_count, category_counts, measure_names, wave_length, current_param_vec,\
-           age_min, age_max, age_incr, x_min, x_max, x_count, which_indices,\
+from TwoStudyAllOver23HeteroParams import data_file, sex_list, T_max, age_col, sex_col, id_col, weight_col, data_init_col,\
+           measure_count, category_counts, measure_names, wave_length, report_type_count, mixed_health_shocks,\
+           current_param_vec, age_min, age_max, age_incr, x_min, x_max, x_count, which_indices,\
            source_name, figure_label, param_file_name
 report_count = np.sum(category_counts)
 measure_starts = np.concatenate((np.array([0]),np.cumsum(category_counts)[:-1]))
@@ -26,11 +26,11 @@ h_count = category_counts[0] # Number of SRHS categories
 
 # Set OpenCL environment variables
 import os
-os.environ["PYOPENCL_CTX"] = "0:1,2" # This is where you choose devices
-D = 2     # Make sure this has the number of devices selected
-d_opt = 1 # This should have the (relative) index of the fastest device
-device_loads = [0.3,0.7] # These should sum to 1.0, specify load split across devices
-thread_counts = [2**12,2**11] # Number of threads to spawn on each device
+os.environ["PYOPENCL_CTX"] = "2:0" # This is where you choose devices
+D = 1     # Make sure this has the number of devices selected
+d_opt = 0 # This should have the (relative) index of the fastest device
+device_loads = [1.0] # These should sum to 1.0, specify load split across devices
+thread_counts = [2**10] # Number of threads to spawn on each device
 
 # Load in the panel data on health
 t0 = time()
@@ -41,12 +41,15 @@ infile.close()
 obs = len(all_data)
 
 # Unpack the data into arrays
+id_data = np.zeros(obs, dtype=int)
 weight_data = np.zeros(obs) + np.nan
 age_data = np.zeros(obs) + np.nan
 sex_data = np.zeros(obs,dtype=int)
 report_data = -np.ones((obs,T_max,measure_count),dtype=int)
 srhs_data = -np.ones((obs,T_max),dtype=int)
 for i in range(obs):
+    if id_col is not None:
+        id_data[i] = int(float(all_data[i][1]))
     weight_data[i] = float(all_data[i][weight_col])
     age_data[i] = float(all_data[i][age_col])
     sex_data[i] = int(all_data[i][sex_col])
@@ -60,6 +63,18 @@ for i in range(obs):
             except:
                 pass
             j += 1
+            
+# Reorder the data by starting age (this makes the code much faster)
+order = np.argsort(age_data)
+weight_data = weight_data[order]
+age_data = age_data[order]
+sex_data = sex_data[order]
+report_data = report_data[order,:,:]
+srhs_data = srhs_data[order,:]
+id_data = id_data[order]
+
+# Renormalize weights so that mean observation weight is 1.0
+weight_data /= np.sum(weight_data)/obs
         
 # Cut the data for which sexes and ages will be included
 age_max_alt = age_max - (T_max-1)*age_incr # Maximum acceptable starting age
@@ -101,18 +116,8 @@ age_data = age_data[accept]
 sex_data = sex_data[accept]
 report_data = report_data[accept,:,:]
 srhs_data = srhs_data[accept,:]
+id_data = id_data[accept]
 obs = np.sum(accept)
-
-# Renormalize weights so that mean observation weight is 1.0
-weight_data /= np.sum(weight_data)/obs
-        
-# Reorder the data by starting age (this makes the code much faster)
-order = np.argsort(age_data)
-weight_data = weight_data[order]
-age_data = age_data[order]
-sex_data = sex_data[order]
-report_data = report_data[order,:,:]
-srhs_data = srhs_data[order,:]
 age_data_alt = np.round((age_data-age_min)/age_incr).astype(int)
         
 # Find the "length" of observation period for each individual
@@ -150,13 +155,17 @@ ind_count = starts.size
 age_count_A = int((age_max - age_min)/age_incr + 1)
 age_count_B = age_count_A - T_max + 1
 
-t1 = time()
-print('Loading the data file took ' + str(t1-t0) + ' seconds.')
-
 # Define the cut points for the continuous health variable x, and the midpoints
-x_cuts = np.linspace(x_min,x_max,num=x_count+1)
+if x_count % report_type_count > 0:
+    print('x_count is not divisible by report_type_count, code will break!')
+x_count_cond = x_count // report_type_count
+x_cuts = np.linspace(x_min,x_max,num=x_count_cond+1)
 x_grid = (x_cuts[1:] + x_cuts[:-1])/2.
 x_step = x_grid[1] - x_grid[0]
+x_grid_rep = np.tile(x_grid, report_type_count)
+
+t1 = time()
+print('Loading the data file took ' + '{:.3f}'.format(t1-t0) + ' seconds.')
 
 # Make an OpenCL context and a queue for each device
 f = open('HiddenHealthLL.cl')
@@ -184,6 +193,7 @@ xGrid_buf = []
 HealthDstnNow_buf = []
 TempDstnNow_buf = []
 LivPrbArray_buf = []
+TransPrbArrayMake_buf = []
 TransPrbArray_buf = []
 ReportPrbArray_buf = []
 HealthInitDstn_buf = []
@@ -193,6 +203,7 @@ ReportVec_buf = []
 StartVec_buf = []
 LengthVec_buf = []
 LogLikelihood_buf = []
+TypeProb_buf = []
 IntegerInputs_buf = []
 CorrVec_buf = []
 ExpHealthBase_buf = []
@@ -204,21 +215,25 @@ data_start = 0
 for d in range(D):
     # Make the integer inputs vector for this device
     working_array_size = thread_counts[d]*x_count
-    integer_inputs_this_device = np.array([measure_count,x_count,age_count_A,age_count_B,thread_counts[d],0,ind_count],dtype=int)
+    integer_inputs_this_device = np.array([measure_count, x_count, age_count_A, age_count_B, thread_counts[d], 0, ind_count, x_count_cond, 1],dtype=int)
     if d == (D-1):
         data_end = ind_count
     else:
         data_end = data_start + int(device_loads[d]*ind_count)
+    if mixed_health_shocks:
+        integer_inputs_this_device[8] = 2 # Improve this later if mixed normal gets extended
     integer_inputs_this_device[5] = data_start
     integer_inputs_this_device[6] = data_end
     IntegerInputs_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, integer_inputs_this_device))
     data_start = data_end
     
+    # Initialize all of the other buffers for this device
     xCuts_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, x_cuts))
     xGrid_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, x_grid))
     HealthDstnNow_buf.append(ctx.create_buffer(cl.CL_MEM_READ_WRITE | cl.CL_MEM_COPY_HOST_PTR, np.zeros(working_array_size)))
     TempDstnNow_buf.append(ctx.create_buffer(cl.CL_MEM_READ_WRITE | cl.CL_MEM_COPY_HOST_PTR, np.zeros(working_array_size)))
     LivPrbArray_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(2*age_count_A*x_count)))
+    TransPrbArrayMake_buf.append(ctx.create_buffer(cl.CL_MEM_READ_WRITE | cl.CL_MEM_COPY_HOST_PTR, np.zeros(2*age_count_A*x_count_cond*x_count_cond)))
     TransPrbArray_buf.append(ctx.create_buffer(cl.CL_MEM_READ_WRITE | cl.CL_MEM_COPY_HOST_PTR, np.zeros(2*age_count_A*x_count*x_count)))
     ReportPrbArray_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(2*age_count_A*x_count*report_count)))
     HealthInitDstn_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(2*age_count_B*x_count)))
@@ -228,15 +243,16 @@ for d in range(D):
     StartVec_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, starts))
     LengthVec_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, lengths))
     LogLikelihood_buf.append(ctx.create_buffer(cl.CL_MEM_WRITE_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(ind_count)))
+    TypeProb_buf.append(ctx.create_buffer(cl.CL_MEM_WRITE_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(report_type_count*ind_count)))
     CorrVec_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(age_count_A)))
     ExpHealthBase_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(age_count_A)))
-    Parameters_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(4)))
+    Parameters_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, np.zeros(16)))
     MeasureStarts_buf.append(ctx.create_buffer(cl.CL_MEM_READ_ONLY | cl.CL_MEM_COPY_HOST_PTR, measure_starts))
 
 # Load the buffers for each device into kernels
 for d in range(D):
     TransPrbKernel[d].set_args(
-            TransPrbArray_buf[d],
+            TransPrbArrayMake_buf[d],
             xGrid_buf[d],
             xCuts_buf[d],
             ExpHealthBase_buf[d],
@@ -244,7 +260,7 @@ for d in range(D):
             Parameters_buf[d],
             IntegerInputs_buf[d])
     TransPrbKernel2[d].set_args(
-            TransPrbArray_buf[d],
+            TransPrbArrayMake_buf[d],
             IntegerInputs_buf[d])
     LLkernel[d].set_args(
             LivPrbArray_buf[d],
@@ -254,6 +270,7 @@ for d in range(D):
             HealthDstnNow_buf[d],
             TempDstnNow_buf[d],
             LogLikelihood_buf[d],
+            TypeProb_buf[d],
             AgeVec_buf[d],
             SexVec_buf[d],
             ReportVec_buf[d],
@@ -263,7 +280,7 @@ for d in range(D):
             MeasureStarts_buf[d])
     
 t2 = time()
-print('Setting up OpenCL took ' + str(t2-t1) + ' seconds.')
+print('Setting up OpenCL took ' + '{:.3f}'.format(t2-t1) + ' seconds.')
 
 
 # Define a function that describes the data (after it's been trimmed)
@@ -299,7 +316,7 @@ def describeData():
         if count_vec[n] > 0:
             desc += str(count_vec[n]) + ' individuals are observed for ' + str(n) + ' waves (' + "{:.1f}".format(100*pct) + '%, ' + "{:.1f}".format(100*cumpct) + '% cumulative).\n'
     
-    return desc    
+    return desc, np.sum(ob_alive_T), np.sum(died)
 
 
 # Define the function to produce survival probabilities
@@ -352,12 +369,13 @@ def makeLivPrbArray(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealt
     age_count = int(np.round((age_max - age_min)/age_incr)) + 1
     
     AgeVec = np.linspace(age_min,age_max,num=age_count)
-    AgeArray = np.tile(np.reshape(AgeVec,(1,age_count,1)),(1,1,x_count))
-    xArray = np.tile(np.reshape(x_grid,(1,1,x_count)),(1,age_count,1))
+    AgeArray = np.tile(np.reshape(AgeVec,(1,age_count,1)),(1,1,x_count_cond))
+    xArray = np.tile(np.reshape(x_grid,(1,1,x_count_cond)),(1,age_count,1))
     
-    thetaArray = np.zeros((2,age_count,x_count))
+    thetaArray = np.zeros((2,age_count,x_count_cond))
     thetaArray[0,:,:] = ThetaFunc(0,AgeArray,xArray)
     thetaArray[1,:,:] = ThetaFunc(1,AgeArray,xArray)
+    thetaArray = np.tile(thetaArray,(1,1,report_type_count))
 
     LivPrbArray = norm.cdf(thetaArray)
     return LivPrbArray
@@ -366,7 +384,7 @@ def makeLivPrbArray(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealt
 # Define the function that constructs the array of transition probabilities
 def makeTransProbArray(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAge3,
                        CorrAge4,Health0,HealthSex,HealthAge1,HealthAge2,HealthAge3,
-                       HealthAge4,HealthAgeSex):
+                       HealthAge4,HealthAgeSex,HealthShockAvgs,HealthShockStds,HealthShockPrbs):
     '''
     Make a 4D array of health transition probabilities: sex X age X x_t X x_t+1.
     
@@ -402,6 +420,12 @@ def makeTransProbArray(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAge3
         Quartic coefficient in expected next health function.
     HealthAgeSex : float
         Interaction between age and sex in expected next health function.
+    HealthShockAvgs : [float]
+        Vector of health shock means; should have overall mean 0 when weighting by probs.
+    HealthShockStds : [float]
+        Vector of health shock means; should have overall std 1 when weighting by probs.
+    HealthShockPrbs : [float]
+        Vector of weights for the mixed normal health shocks, summing to 1.
     
     Returns
     -------
@@ -409,38 +433,52 @@ def makeTransProbArray(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAge3
         Array of shape (2,age_count,x_count,x_count) with transition probabilities
         between health states at each sex and age.
     '''
+    # Make correlation vector by age
     AgeVec = np.linspace(age_min,age_max,num=age_count_A)
     CorrVecBase = Corr0 + CorrAge1*AgeVec + CorrAge2*AgeVec**2 + CorrAge3*AgeVec**3 + CorrAge4*AgeVec**4
     CorrVec = np.exp(CorrVecBase)/(1. + np.exp(CorrVecBase))
     
-    TransPrbArray = np.zeros((2,age_count_A,x_count,x_count))
+    # Make end points of grid go to infinity
+    x_cuts_temp = x_cuts.copy()
+    x_cuts_temp[0] = -np.inf
+    x_cuts_temp[-1] = np.inf
+    x_cuts_tiled = np.tile(np.reshape(x_cuts_temp,(1,x_count_cond+1)),(x_count_cond,1))
     
-    x_cuts_tiled = np.tile(np.reshape(x_cuts,(1,x_count+1)),(x_count,1))
+    TransPrbArray = np.zeros((2,age_count_A,x_count_cond,x_count_cond))
+    N = len(HealthShockPrbs)
     for s in range(2):
         for j in range(age_count_A):
             Age = AgeVec[j]
             Corr = CorrVec[j]
             ExpHealthBase = Health0 + HealthAge1*Age + HealthAge2*Age**2 + HealthAge3*Age**3 + HealthAge4*Age**4 + HealthSex*s + HealthAgeSex*s*Age
             ExpHealthNext = Corr*x_grid + (1.-Corr)*ExpHealthBase
-            ExpHealthNext_tiled = np.tile(np.reshape(ExpHealthNext,(x_count,1)),(1,x_count+1))
-            distance_array = x_cuts_tiled - ExpHealthNext_tiled
-            CDF_array = norm.cdf(distance_array)
-            SF_array  = norm.sf(distance_array)
-            these = distance_array[:,:-1] < 4.0
-            prob_array_base = np.zeros((x_count,x_count))
-            prob_array_base[these] = CDF_array[:,1:][these] - CDF_array[:,:-1][these]
-            these = np.logical_not(these)
-            prob_array_base[these] = SF_array[:,:-1][these] - SF_array[:,1:][these]
-            sum_array = np.tile(np.reshape(np.sum(prob_array_base,axis=1),(x_count,1)),(1,x_count))
-            prob_array = prob_array_base/sum_array
-            TransPrbArray[s,j,:,:] = np.reshape(prob_array,(1,1,x_count,x_count))
+            ExpHealthNext_tiled = np.tile(np.reshape(ExpHealthNext,(x_count_cond,1)),(1,x_count_cond+1))
+            for n in range(N):
+                distance_array = (x_cuts_tiled - (ExpHealthNext_tiled + HealthShockAvgs[n]))/HealthShockStds[n]
+                CDF_array = norm.cdf(distance_array)
+                SF_array  = norm.sf(distance_array)
+                these = distance_array[:,:-1] < 4.0
+                prob_array_base = np.zeros((x_count_cond,x_count_cond))
+                prob_array_base[these] = CDF_array[:,1:][these] - CDF_array[:,:-1][these]
+                these = np.logical_not(these)
+                prob_array_base[these] = SF_array[:,:-1][these] - SF_array[:,1:][these]
+                sum_array = np.tile(np.reshape(np.sum(prob_array_base,axis=1),(x_count_cond,1)),(1,x_count_cond))
+                prob_array = prob_array_base/sum_array
+                TransPrbArray[s,j,:,:] += HealthShockPrbs[n]*prob_array
+            
+    if report_type_count > 1:
+        TransPrbArray_big = np.zeros((2,age_count_A,x_count,x_count))
+        for n in range(report_type_count):
+            TransPrbArray_big[:,:,(n*x_count_cond):((n+1)*x_count_cond),(n*x_count_cond):((n+1)*x_count_cond)] = TransPrbArray
+    else:
+        TransPrbArray_big = TransPrbArray.copy()
 
-    return TransPrbArray
+    return TransPrbArray_big
 
 
 def makeTransProbArrayCL(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAge3,
                        CorrAge4,Health0,HealthSex,HealthAge1,HealthAge2,HealthAge3,
-                       HealthAge4,HealthAgeSex):
+                       HealthAge4,HealthAgeSex,HealthShockAvgs,HealthShockStds,HealthShockPrbs):
     '''
     Make a 4D array of health transition probabilities: sex X age X x_t X x_t+1.
     
@@ -476,35 +514,64 @@ def makeTransProbArrayCL(age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAg
         Quartic coefficient in expected next health function.
     HealthAgeSex : float
         Interaction between age and sex in expected next health function.
+    HealthShockAvgs : [float]
+        Vector of health shock means; should have overall mean 0 when weighting by probs.
+    HealthShockStds : [float]
+        Vector of health shock means; should have overall std 1 when weighting by probs.
+    HealthShockPrbs : [float]
+        Vector of weights for the mixed normal health shocks, summing to 1.
     
     Returns
     -------
-    None
+    TransPrbArray : np.array
+        Array of shape (2,age_count,x_count,x_count) with transition probabilities
+        between health states at each sex and age.
     '''
+    # Calculate the latent health correlation factor by age
     age_count = int(np.round((age_max - age_min)/age_incr)) + 1
     AgeVec = np.linspace(age_min,age_max,num=age_count)
     CorrVecBase = Corr0 + CorrAge1*AgeVec + CorrAge2*AgeVec**2 + CorrAge3*AgeVec**3 + CorrAge4*AgeVec**4
     CorrVec = np.exp(CorrVecBase)/(1. + np.exp(CorrVecBase))
     
+    # Calculate expected health at each age-sex
     ExpHealthBase = Health0 + HealthAge1*AgeVec + HealthAge2*AgeVec**2 + HealthAge3*AgeVec**3 + HealthAge4*AgeVec**4
-    parameters_temp = np.array([HealthSex,HealthAgeSex,age_incr,0.0])
-    prob_size = 2*age_count_A*x_count*x_count
-    prob_size_alt = 2*age_count_A*x_count
+    
+    # Load the parameter buffer
+    N = HealthShockAvgs.size
+    parameters_temp = np.zeros(16)
+    parameters_temp[:3] = np.array([HealthSex,HealthAgeSex,age_incr])
+    parameters_temp[3:(3+N)] = HealthShockAvgs
+    parameters_temp[(3+N):(3+2*N)] = HealthShockStds
+    parameters_temp[(3+2*N):(3+3*N)] = HealthShockPrbs
+    
+    # Make array to hold output
+    prob_size = 2*age_count_A*x_count_cond*x_count_cond
+    prob_size_alt = 2*age_count_A*x_count_cond
     temp_out = np.zeros(prob_size)
     
+    # Compute latent health transition probabilities
     d = d_opt
     queue[d].write_buffer(CorrVec_buf[d],CorrVec)
     queue[d].write_buffer(ExpHealthBase_buf[d],ExpHealthBase)
     queue[d].write_buffer(Parameters_buf[d],parameters_temp)
     queue[d].execute_kernel(TransPrbKernel[d], [(prob_size//32 + 1)*32], [32])
     queue[d].execute_kernel(TransPrbKernel2[d], [(prob_size_alt//32 + 1)*32], [32])
-    queue[d].read_buffer(TransPrbArray_buf[d],temp_out)
+    queue[d].read_buffer(TransPrbArrayMake_buf[d],temp_out)
     
-    return np.reshape(temp_out,(2,age_count_A,x_count,x_count))
+    # Reshape and replicate the transition array if there is reporting heterogeneity
+    TransPrbArray = np.reshape(temp_out,(2,age_count_A,x_count_cond,x_count_cond))
+    if report_type_count > 1:
+        TransPrbArray_big = np.zeros((2,age_count_A,x_count,x_count))
+        for n in range(report_type_count):
+            TransPrbArray_big[:,:,(n*x_count_cond):((n+1)*x_count_cond),(n*x_count_cond):((n+1)*x_count_cond)] = TransPrbArray
+    else:
+        TransPrbArray_big = TransPrbArray.copy()
+
+    return TransPrbArray_big 
 
 
 # Define the function that constructs categorical health observation probabilities
-def makeReportPrbArray(Constants,Coeffs,CutLists):
+def makeReportPrbArray(Constants,Coeffs,CutLists,ReportStds):
     '''
     Make an array with the probability of reporting each categorical response
     from each value on the x_grid, for each measure.
@@ -518,6 +585,8 @@ def makeReportPrbArray(Constants,Coeffs,CutLists):
     CutLists : [np.array]
         List of arrays of size (category_count[j]-2) cutoff points in the space
         of x.  The lowest cut point for each measure is assumed to be zero.
+    ReportStds : np.array
+        Array of SRHS reporting error standard deviations.
         
     Returns
     -------
@@ -535,22 +604,28 @@ def makeReportPrbArray(Constants,Coeffs,CutLists):
         c_count = category_counts[j]
     
         Cuts_plus = np.concatenate(([-np.inf,0.0],CutList,[np.inf]))
-        Cuts_tiled = np.tile(np.reshape(Cuts_plus,(1,c_count+1)),(x_count,1))
+        Cuts_tiled = np.tile(np.reshape(Cuts_plus,(1,c_count+1)),(x_count_cond,1))
         y_grid = Const + Coeff*x_grid
-        y_grid_tiled = np.tile(np.reshape(y_grid,(x_count,1)),(1,c_count+1))
+        y_grid_tiled = np.tile(np.reshape(y_grid,(x_count_cond,1)),(1,c_count+1))
         distance_array = (Cuts_tiled - y_grid_tiled)
-        CDF_array = norm.cdf(distance_array)
-        ReportPrbArray[pos:(pos+c_count),:] = np.transpose(CDF_array[:,1:] - CDF_array[:,:-1])
+        
+        if j == 0: # If this measure is SRHS, then use different reporting error std for each type
+            for n in range(report_type_count):
+                distance_array_temp = distance_array / ReportStds[n]
+                CDF_array = norm.cdf(distance_array_temp)
+                ReportPrbArray[pos:(pos+c_count),(n*x_count_cond):((n+1)*x_count_cond)] = np.transpose(CDF_array[:,1:] - CDF_array[:,:-1])
+        else: # For all other measures, use standard normal reporting error
+            CDF_array = norm.cdf(distance_array)
+            ReportPrbArray[pos:(pos+c_count),:] = np.tile(np.transpose(CDF_array[:,1:] - CDF_array[:,:-1]), report_type_count)
         
         pos += c_count
         
-    
     return ReportPrbArray
 
 
 # Define the function that constructs the distribution of health for individuals
 # when they are first observed in the data
-def makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd):
+def makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd,TypePrbs):
     '''
     Make an array with the unconditional distribution of the continuous health
     state x for someone who has been observed for the first time.
@@ -565,6 +640,8 @@ def makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd):
         Mean of health at the earliest age in the model.
     xInitStd : float
         Standard devation of health at the earliest age in the model.
+    TypePrbs : np.array
+        Array of population shares of each reporting type (should sum to 1).
         
     Returns
     -------
@@ -573,7 +650,7 @@ def makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd):
         of continuous health x at age j and sex s.
     '''
     T = LivPrbArray.shape[1]-T_max+1
-    InitialHealthDstn = np.zeros((2,T,x_count))
+    InitialHealthDstn = np.zeros((2,T,x_count_cond))
     
     # Approximate the distribution of health at the earliest age in the model
     distances = (x_cuts - xInitMean)/xInitStd
@@ -588,13 +665,19 @@ def makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd):
         HealthDstnNow = copy(HealthDstn0)
         for j in range(T):
             InitialHealthDstn[s,j,:] = HealthDstnNow
-            LivPrbs = LivPrbArray[s,j,:]
+            LivPrbs = LivPrbArray[s,j,:x_count_cond]
             TempDstn = HealthDstnNow*LivPrbs
             HealthDstnNow = TempDstn/np.sum(TempDstn)
-            TransPrbs = TransPrbArray[s,j,:,:]
+            TransPrbs = TransPrbArray[s,j,:x_count_cond,:x_count_cond]
             HealthDstnNow = np.dot(np.transpose(TransPrbs),HealthDstnNow)
             
-    return InitialHealthDstn
+    # Replicate the initial distribution by the number of reporting types,
+    # adjusting for the population share of each type
+    InitialHealthDstnBig = np.zeros((2,T,x_count))
+    for n in range(report_type_count):
+        InitialHealthDstnBig[:,:,(n*x_count_cond):((n+1)*x_count_cond)] = InitialHealthDstn*TypePrbs[n]
+            
+    return InitialHealthDstnBig
     
 
 # Define the function that constructs arrays for the LL evaluation
@@ -602,8 +685,9 @@ def makeProbArrays(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealth
                    MortHealth3,MortHealth4,MortAge1,MortAge2,MortAge3,MortAge4,
                    MortHealthAge,MortSexAge,Corr0,CorrAge1,CorrAge2,CorrAge3,
                    CorrAge4,Health0,HealthSex,HealthAge1,HealthAge2,HealthAge3,
-                   HealthAge4,HealthAgeSex,ReportConstants,ReportCoeffs,ReportCuts,
-                   xInitMean,xInitStd):
+                   HealthAge4,HealthAgeSex,HealthShockAvgs,HealthShockStds,
+                   HealthShockPrbs,ReportConstants,ReportCoeffs,ReportCuts,
+                   ReportStds,TypePrbs,xInitMean,xInitStd):
     '''
     Construct LivPrbArray, TransPrbArray, ReportPrbArray, and HealthInitDstn
     from model paramaters.
@@ -664,6 +748,12 @@ def makeProbArrays(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealth
         Quartic coefficient in expected next health function.
     HealthAgeSex : float
         Interaction between age and sex in expected next health function.
+    HealthShockAvgs : [float]
+        Vector of health shock means; should have overall mean 0 when weighting by probs.
+    HealthShockStds : [float]
+        Vector of health shock means; should have overall std 1 when weighting by probs.
+    HealthShockPrbs : [float]
+        Vector of weights for the mixed normal health shocks, summing to 1.
     ReportConstants : [float]
          List of measure_count - 1 constant terms in report probit equations.
     ReportCoeffs : [float]
@@ -671,6 +761,10 @@ def makeProbArrays(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealth
     ReportCuts : [float]
         List of report_count-2*measure_count cutoff points in the space of x.
         The lowest cut point for each measure is assumed to be zero.
+    ReportStds : [float]
+        List of SRHS reporting error standard deviations by type.
+    TypePrbs : [float]
+        Accompanying list of probabilities of each reporting type.
     xInitMean : float
         Mean of health at the earliest age in the model.
     xInitStd : float
@@ -698,7 +792,7 @@ def makeProbArrays(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealth
     TransPrbArray = makeTransProbArrayCL(
                        age_min,age_max,age_incr,Corr0,CorrAge1,CorrAge2,CorrAge3,
                        CorrAge4,Health0,HealthSex,HealthAge1,HealthAge2,HealthAge3,
-                       HealthAge4,HealthAgeSex)
+                       HealthAge4,HealthAgeSex,HealthShockAvgs,HealthShockStds,HealthShockPrbs)
     
     ReportCutLists = []
     pos = 0
@@ -706,15 +800,15 @@ def makeProbArrays(age_min,age_max,age_incr,Mort0,MortSex,MortHealth1,MortHealth
         c_count = category_counts[j] - 2
         ReportCutLists.append(ReportCuts[pos:(pos+c_count)])
         pos += c_count
-    ReportPrbArray = makeReportPrbArray(ReportConstants,ReportCoeffs,ReportCutLists)
+    ReportPrbArray = makeReportPrbArray(ReportConstants,ReportCoeffs,ReportCutLists,ReportStds)
     
-    HealthInitDstn = makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd)
+    HealthInitDstn = makeInitialHealthDstn(LivPrbArray,TransPrbArray,xInitMean,xInitStd,TypePrbs)
     
     return LivPrbArray, TransPrbArray, ReportPrbArray, HealthInitDstn
 
 
 # Define a function that translates a vector of parameters into a dictionary
-def makeParameterDict(param_vec):
+def makeParameterDict(param_vec, return_as_array=False):
     '''
     Transforms a vector of size 27 + h_count - 2 into a dictionary.
     
@@ -722,31 +816,101 @@ def makeParameterDict(param_vec):
     ----------
     param_vec : np.array
         Array of model parameters; order is shown in code.
+    return_as_array : bool
+        Indicator for whether this function should return a 1D array of structural
+        parameters rather than a dictionary.
         
     Returns
     -------
     param_dict : dictionary
         Dictionary that can be used in makeProbArrays.
     '''
-    a = 26
+    # Get parameter indices
+    a = 26 + mixed_health_shocks*3
     constants = measure_count - 1
     coefficients = measure_count
-    b = a + constants
-    c = b + coefficients
+    b = a + report_type_count - 1
+    c = b + report_type_count - 1
+    d = c + constants
+    e = d + coefficients
     
+    # Rescale coefficients
     MortHealthTaylor = np.array([0., param_vec[2]*1e-1, param_vec[3]*1e-2, param_vec[4]*1e-3, param_vec[5]*1e-4])
-    MortHealthCoeffs = changeTaylorToPoly(MortHealthTaylor, 0.)
     MortAgeTaylor = np.array([param_vec[0], param_vec[6]*1e-2, param_vec[7]*1e-4, param_vec[8]*1e-6, param_vec[9]*1e-8])
-    MortAgeCoeffs = changeTaylorToPoly(MortAgeTaylor, age_min)
     CorrTaylor = np.array([param_vec[12], param_vec[13]*1e-2, param_vec[14]*1e-4, param_vec[15]*1e-6, param_vec[16]*1e-8])
-    CorrCoeffs = changeTaylorToPoly(CorrTaylor, age_min)
     HealthAgeTaylor = np.array([param_vec[17], param_vec[19]*1e-1, param_vec[20]*1e-2, param_vec[21]*1e-3, param_vec[22]*1e-4])
+    
+    # Transform raw parameters into coefficients
+    MortHealthCoeffs = changeTaylorToPoly(MortHealthTaylor, 0.)
+    MortAgeCoeffs = changeTaylorToPoly(MortAgeTaylor, age_min)
+    CorrCoeffs = changeTaylorToPoly(CorrTaylor, age_min)
     HealthAgeCoeffs = changeTaylorToPoly(HealthAgeTaylor, age_min)
     
+    if mixed_health_shocks:
+        HealthShockAvgs = np.zeros(2)
+        HealthShockStds = np.zeros(2)
+        temp = np.array([0., param_vec[28]])
+        HealthShockPrbs = np.exp(temp)/np.sum(np.exp(temp))
+        HealthShockAvgs[1] = param_vec[26]
+        HealthShockAvgs[0] = -HealthShockPrbs[1]*HealthShockAvgs[1]/HealthShockPrbs[0]
+        HealthShockStds[1] = np.exp(param_vec[27])
+        P = HealthShockPrbs
+        M = HealthShockAvgs
+        S = HealthShockStds
+        HealthShockStds[0] = np.sqrt((1. - P[0]*M[0]**2 - P[1]*(S[1]**2 + M[1]**2))/P[0])
+    else:
+        HealthShockAvgs = np.zeros(1)
+        HealthShockStds = np.ones(1)
+        HealthShockPrbs = np.ones(1)
+    
+    # Calculate SRHS reporting type probabilities and standard deviations
+    if report_type_count > 1:
+        ExpBase = np.concatenate([[1.], np.exp(param_vec[b:c])])
+        TypePrbs = ExpBase/np.sum(ExpBase)
+        ReportStds_temp = np.exp(param_vec[a:b])
+        ReportVars_temp = ReportStds_temp**2
+        ReportVar_new = (1. - np.dot(ReportVars_temp, TypePrbs[1:]))/TypePrbs[0]
+        ReportStds = np.sqrt(np.concatenate([[ReportVar_new], ReportVars_temp]))
+    else:
+        TypePrbs = np.array([1.])
+        ReportStds = np.array([1.])
+    
+    if return_as_array: # This is for standard errors only
+        CumulativeCuts = []
+        CutPoints = param_vec[e:]
+        i = 0
+        for m in range(measure_count):
+            C = category_counts[m]
+            these_cuts = np.cumsum(CutPoints[i:(i+C-2)])
+            CumulativeCuts += these_cuts.tolist()
+            i += C-2
+    
+        param_vec_out = np.concatenate([
+            param_vec[0:2],
+            MortHealthTaylor[1:5],
+            MortAgeTaylor[1:5],
+            [param_vec[10]*1e-4,
+            param_vec[11]*1e-3],
+            CorrTaylor,
+            param_vec[17:19],
+            HealthAgeTaylor[1:5],
+            [param_vec[23]*1e-3],
+            HealthShockAvgs,
+            HealthShockStds,
+            HealthShockPrbs,
+            param_vec[24:26],
+            ReportStds,
+            TypePrbs,
+            np.concatenate(([0.],param_vec[c:d])),
+            param_vec[d:e],
+            CumulativeCuts, # Processed into cut points rather than widths
+        ])
+        return param_vec_out
+    
     param_dict = {
-            'age_min' : age_min,
-            'age_max' : age_max,
-            'age_incr' : age_incr,
+            'age_min' :       age_min,
+            'age_max' :       age_max,
+            'age_incr' :      age_incr,
             'Mort0' :         MortAgeCoeffs[0],
             'MortSex' :       param_vec[1],
             'MortHealth1' :   MortHealthCoeffs[1],
@@ -771,29 +935,43 @@ def makeParameterDict(param_vec):
             'HealthAge3' :    HealthAgeCoeffs[3],
             'HealthAge4' :    HealthAgeCoeffs[4],
             'HealthAgeSex' :  param_vec[23]*1e-3,
+            'HealthShockAvgs' : HealthShockAvgs,
+            'HealthShockStds' : HealthShockStds,
+            'HealthShockPrbs' : HealthShockPrbs,
             'xInitMean' :     param_vec[24],
             'xInitStd' :      param_vec[25],
-            'ReportConstants' : np.concatenate(([0],param_vec[a:b])),
-            'ReportCoeffs' :  param_vec[b:c],
-            'ReportCuts' :    param_vec[c:],
+            'ReportStds' :    ReportStds,
+            'TypePrbs' :      TypePrbs,
+            'ReportConstants' : np.concatenate(([0],param_vec[c:d])),
+            'ReportCoeffs' :  param_vec[d:e],
+            'ReportCuts' :    param_vec[e:],
             }
+    
     return param_dict
 
 
 # Define the log likelihood function
-def LLfunction(param_vec):
+def LLfunction(param_vec, return_ind_LL=False):
     '''
-    Calculates the log likelihood of the data at a given parameter vector.
+    Calculates the (negative) log likelihood of the data at a given parameter vector.
     
     Parameters
     ----------
     param_vec : np.array
         Array of model parameters; order is shown in code.
+    return_ind_LL : bool
+        Indicator for whether the function should return a vector of each respondent's
+        contribution to the LL function (True), or sum them up (False, default).
         
     Returns
     -------
-    LL : float
-        Log likelihood of data at input parameter vector.
+    negLL : float
+        Negative log likelihood of data at input parameter vector.
+        
+    OR
+    
+    ind_LL : np.array
+        Vector of individual contributions to the log likelihood function.
     '''
     # Calculate transition and initial probabilities
     my_dict = makeParameterDict(param_vec)
@@ -822,11 +1000,17 @@ def LLfunction(param_vec):
     negLL = -np.dot(LLvec_out, weight_data)
     print(negLL)
     
+    # Write progress to file every so often
     EvalCount.eval_count += 1
-    if np.mod(EvalCount.eval_count,20) == 0:
+    if np.mod(EvalCount.eval_count,10) == 0:
         writeParamsToFile(param_vec,'EstimationProgress.txt')
     
-    return negLL
+    # Return output in the format requested
+    if return_ind_LL:
+        ind_LL = LLvec_out*weight_data
+        return ind_LL
+    else:
+        return negLL
 
 
 def makeFigures(param_vec, save_bool):
@@ -836,68 +1020,74 @@ def makeFigures(param_vec, save_bool):
     my_dict = makeParameterDict(param_vec)
     LivPrbArray, TransPrbArray, ReportPrbArray, HealthInitDstn = makeProbArrays(**my_dict)
     
-#    # Overall data vs model vs SSA mortality plots
-#    makeMortFigure(LivPrbArray,HealthInitDstn,False,save_bool)
-#    
-#    # Mortality by health and age plots
-#    makeMortByHealthFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
-#    
-#    # Health distribution by age plots
-#    makeReportFigure(ReportPrbArray,HealthInitDstn,True,False,save_bool)
-#    
-#    # T-ahead health transition plots
-#    for h in range(1,h_count+1):
-#        makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,h,12,'model',False,save_bool)
-#    for t in range(1,2):
-#        makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,3,t,'model',False,save_bool)
-#    
-#    # Probability of changing answer plot
-#    makeChangeAnswerFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
-#    
-#    # Duration dependence figures
-#    makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,4,save_bool)
-#    
-    # Make frequency of future unhealthy periods figures
-    age_lo = [25,35,45,55,65,75]
-    age_hi = [34,44,54,64,74,84]
-    for i in range(len(age_lo)):
-        makeStateCountFigure(param_vec, age_lo[i], age_hi[i], 6, save_bool)
-#    
-#    # Make health distribution by age figures
-#    makeHealthDstnByAgeFigure(HealthInitDstn,save_bool)
-#    
-#    # Make health correlation by age figure
-#    makeCorrFigure(my_dict['Corr0'],my_dict['CorrAge1'],my_dict['CorrAge2'],my_dict['CorrAge3'],my_dict['CorrAge4'], True, save_bool)
-#    
-#    # Make same SRHS in every wave figure
-#    makeConstantSRHSfigure(param_vec, save_bool)
-#    
-#    # Make animation for health transition
-#    already_done = []
-#    s = sex_list[0]
-#    j = 30
-#    h = 2
-#    xVec_temp = np.copy(HealthInitDstn[s,j,:])
-#    if h > 0:
-#        xVec_temp *= ReportPrbArray[h-1,:]
-#        xVec_temp /= np.sum(xVec_temp)
-#    Order = np.flip(np.argsort(xVec_temp),axis=0)
-#    makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,0,already_done,0,0, pdf_bool=True)
-#    for i in range(25):
-#        k = Order[i]
-#        for f in range(4):
-#            makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,k,already_done,f,i*4)
-#        already_done.append(k)
-#    makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,k,already_done,0,x_count*4)
-#    makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,0,already_done,0,x_count*4+1, use_orig=True, pdf_bool=True)
+    # # Overall data vs model vs SSA mortality plots
+    # makeMortFigure(LivPrbArray,HealthInitDstn,False,save_bool)
     
-#    # Make demonstration of mortality
-#    for f in range(4):
-#        makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,0,72,f)
-#    
-#    # Make demonstration of observing SRHS
-#    for f in range(4):
-#        makeReportDemoFigure(ReportPrbArray,HealthInitDstn,0,30,2,f)
+    # # Mortality by health and age plots
+    # makeMortByHealthFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
+    
+    #Health distribution by age plots
+    # makeReportFigure(ReportPrbArray,HealthInitDstn,True,False,save_bool)
+    
+    # T-ahead health transition plots
+    #for h in range(1,h_count+1):
+    #    makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,h,16,'model',False,save_bool)
+    #for t in range(2,21,2):
+    #  makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,5,t,'model',False,save_bool)
+    
+    # # Latent health shock distribution plot
+    #makeHealthShockDstnFigure(my_dict['HealthShockAvgs'],my_dict['HealthShockStds'],my_dict['HealthShockPrbs'],save_bool)
+    
+    # # Probability of changing answer plot
+    # makeChangeAnswerFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
+    
+    # # Duration dependence figures
+    makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,4,save_bool)
+    # makeMortDurDepFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
+    
+    # # Make frequency of future unhealthy periods figures
+    # age_lo = [25,35,45,55,65,75]
+    # age_hi = [34,44,54,64,74,84]
+    # #age_lo = [55,65,75]
+    # #age_hi = [64,74,84]
+    # for i in range(len(age_lo)):
+    #     makeStateCountFigures(param_vec, sex_list, age_lo[i], age_hi[i], 6, save_bool)
+    
+    # # Make latent health distribution by age figures
+    # makeHealthDstnByAgeFigure(HealthInitDstn,save_bool)
+    
+    # # Make health correlation by age figure
+    # makeCorrFigure(my_dict['Corr0'],my_dict['CorrAge1'],my_dict['CorrAge2'],my_dict['CorrAge3'],my_dict['CorrAge4'], True, save_bool)
+    
+    # # Make same SRHS in every wave figure
+    # makeConstantSRHSfigure(param_vec, save_bool)
+    
+    # # Make animation for health transition
+    # already_done = []
+    # s = sex_list[0]
+    # j = 30
+    # h = 2
+    # xVec_temp = np.copy(HealthInitDstn[s,j,:])
+    # if h > 0:
+    #     xVec_temp *= ReportPrbArray[h-1,:]
+    #     xVec_temp /= np.sum(xVec_temp)
+    # Order = np.flip(np.argsort(xVec_temp),axis=0)
+    # makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,0,already_done,0,0, pdf_bool=True)
+    # for i in range(25):
+    #     k = Order[i]
+    #     for f in range(4):
+    #         makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,k,already_done,f,i*4)
+    #     already_done.append(k)
+    # makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,k,already_done,0,x_count*4)
+    # makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,0,already_done,0,x_count*4+1, use_orig=True, pdf_bool=True)
+    
+    # # Make demonstration of mortality
+    # for f in range(4):
+    #     makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,0,72,f)
+    
+    # # Make demonstration of observing SRHS
+    # for f in range(4):
+    #     makeReportDemoFigure(ReportPrbArray,HealthInitDstn,0,30,2,f)
     
 
 def makeMortFigure(LivPrbArray, HealthInitDstn, show_legend, save_fig):
@@ -977,15 +1167,16 @@ def makeMortFigure(LivPrbArray, HealthInitDstn, show_legend, save_fig):
         plt.plot(AgeVec_SSA, np.log(DiePrb_SSA_f),'-r')
         plt.plot(age_vec, np.log(DiePrb_data[0,:]),'-.r')
         plt.xlim(np.min(age_vec),np.max(age_vec))
-        plt.ylim(-10,-2)
+        plt.ylim(-10,0)
         plt.xlabel('Age')
         plt.ylabel('Log death probability')
         plt.title('Death probability, women in ' + source_name)
         if show_legend:
             plt.legend(['Model', 'SSA table', source_name + ' data'])
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenMortByAge.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -995,15 +1186,16 @@ def makeMortFigure(LivPrbArray, HealthInitDstn, show_legend, save_fig):
         plt.plot(AgeVec_SSA, np.log(DiePrb_SSA_m),'-b')
         plt.plot(age_vec, np.log(DiePrb_data[1,:]),'-.b')
         plt.xlim(np.min(age_vec),np.max(age_vec))
-        plt.ylim(-10,-2)
+        plt.ylim(-10,0)
         plt.xlabel('Age')
         plt.ylabel('Log death probability')
         plt.title('Death probability, men in ' + source_name)
         if show_legend:
             plt.legend(['Model','SSA table', source_name + ' data'])
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenMortByAge.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1061,6 +1253,9 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
     HealthStatus_data = np.cumsum(HealthStatus_data,axis=2)
     HealthStatus_model = np.cumsum(HealthStatus_model,axis=2)
     HealthStatus_data_plus = np.concatenate((np.zeros((2,age_count_B,1)),HealthStatus_data),axis=2)
+    
+    print(HealthStatus_model[0,:,2])
+    print(HealthStatus_model[1,:,2])
             
     colors = ['b','r','g','m','c'] # Need to make this longer if h_count > 5
     
@@ -1068,14 +1263,15 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[0,:,h],'-'+colors[h])
             plt.plot(age_vec,HealthStatus_model[0,:,h],'--'+colors[h])
-        plt.ylim([-0.001,1.001])
+        plt.ylim([-0.001,1.005])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, women in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenSRHSbyAge.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1084,14 +1280,15 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[1,:,h],'-'+colors[h])
             plt.plot(age_vec,HealthStatus_model[1,:,h],'--'+colors[h])
-        plt.ylim([-0.01,1.01])
+        plt.ylim([-0.01,1.005])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, men in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenSRHSbyAge.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1110,9 +1307,10 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         plt.title('Self reported health status by age, women in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenSRHSbyAgeDataOnly.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1131,9 +1329,10 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         plt.title('Self reported health status by age, men in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenSRHSbyAgeDataOnly.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1152,9 +1351,10 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         plt.title('Self reported health status by age, women in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenSRHSbyAgeFill.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1167,9 +1367,10 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         plt.title('Self reported health status by age, men in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenSRHSbyAgeFill.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1228,8 +1429,8 @@ def makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
     -------
     None
     '''
-    show_naive = (which is 'naive') or (which is 'both')
-    show_model = (which is 'model') or (which is 'both')
+    show_naive = (which == 'naive') or (which == 'both')
+    show_model = (which == 'model') or (which == 'both')
     
     # Get cumulative survival probabilities for men and women up to age j
     LivPrb_model = np.zeros((2,age_count_B))
@@ -1447,9 +1648,10 @@ def makeMortByHealthFigure(LivPrbArray,ReportPrbArray,HealthInitDstn, save_fig):
         plt.ylabel('Log death probability')
         plt.legend(['Poor','Fair','Other'])
         plt.title('Mortality by age and SRHS, women in ' + source_name)
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenMortByAgeHealth.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1465,9 +1667,10 @@ def makeMortByHealthFigure(LivPrbArray,ReportPrbArray,HealthInitDstn, save_fig):
         plt.ylabel('Log death probability')
         plt.legend(['Poor','Fair','Other'])
         plt.title('Mortality by age and SRHS, men in ' + source_name)
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenMortByAgeHealth.pdf'
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
         if save_fig:
             print('Saved figure to ' + filename)
@@ -1620,6 +1823,7 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
     
     # Initialize bad to good duration dependence array for the model
     Bad2GoodArray_model = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
+    Bad2DeadArray_model = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
     
     # Loop through each age, simulating T_back*wave_length periods
     for j in range(age_count_B):
@@ -1633,6 +1837,7 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
             temp_sum = np.sum(HealthDstnNow[s,:])
             Mass[s] *= temp_sum
             HealthDstnNow[s,:] /= temp_sum
+        MassPrev = Mass.copy()
             
         # Simulate T_back*wave_length periods in the model
         bad_labels = []
@@ -1657,18 +1862,21 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
                     StillBadMass += temp_sum*Mass[s]
                     PopMass += Mass[s]
                     HealthDstnNow[s,:] /= temp_sum
-            
-                tau = (t+1)/wave_length - 1
+                    
+                tau = (t+1) // wave_length - 1
                 Bad2GoodArray_model[tau,j+t] = 1.0 - StillBadMass/PopMass
-                
+                Bad2DeadArray_model[tau,j+t] = 1.0 - np.sum(Mass)/np.sum(MassPrev)
+                MassPrev = Mass.copy()
+
                 # Add another label to the legend
-                label = '"Unhealthy" for >=' + str(tau+1) + ' wave'
+                label = '"Unhealthy" for >= ' + str(tau+1) + ' wave'
                 if tau > 0:
                     label += 's'
                 bad_labels.append(label)
-            
+               
     # Initialize good to bad duration dependence array for the model
     Good2BadArray_model = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
+    Good2DeadArray_model = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
     
     # Loop through each age, simulating T_back*wave_length periods
     for j in range(age_count_B):
@@ -1676,10 +1884,13 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
         HealthDstnNow = copy(HealthInitDstn[:,j,:])
         Mass = CumLivPrb_model[:,j]
         
-        # Adjust for observing the agents in bad health
+        # Adjust for observing the agents in good health
         for s in sex_list:
             HealthDstnNow[s,:] *= BinaryPrbArray[1,:]
-            HealthDstnNow[s,:] /= np.sum(HealthDstnNow[s,:])
+            temp_sum = np.sum(HealthDstnNow[s,:])
+            Mass[s] *= temp_sum
+            HealthDstnNow[s,:] /= temp_sum
+        MassPrev = Mass.copy()
             
         # Simulate T_back*wave_length periods in the model
         good_labels = []
@@ -1705,73 +1916,88 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
                     PopMass += Mass[s]
                     HealthDstnNow[s,:] /= temp_sum
             
-                tau = (t+1)/wave_length - 1
+                tau = (t+1) // wave_length - 1
                 Good2BadArray_model[tau,j+t] = 1.0 - StillGoodMass/PopMass
+                Good2DeadArray_model[tau,j+t] = 1.0 - np.sum(Mass)/np.sum(MassPrev)
+                MassPrev = Mass.copy()
                 
                 # Add another label to the legend
-                label = '"Healthy" for >=' + str(tau+1) + ' wave'
+                label = '"Healthy" for >= ' + str(tau+1) + ' wave'
                 if tau > 0:
                     label += 's'
                 good_labels.append(label)
             
     # Make arrays that represent being in "good health" vs "bad health"
-    observed = srhs_data > 0
-    good_health = np.logical_and(srhs_data >= 3, observed)
-    bad_health = np.logical_and(srhs_data < 3, observed)
+    observed = srhs_data >= 0
+    alive = srhs_data >= 1
+    good_health = np.logical_and(srhs_data >= 3, alive)
+    bad_health = np.logical_and(srhs_data < 3, alive)
             
     # Initialize bad to good duration dependence array for the data
     Bad2GoodArray_data = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
+    Bad2DeadArray_data = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
     
     # Loop over each duration
     for T in range(wave_length,(T_back+1)*wave_length,wave_length):
         age_temp = np.array([])
         switch_temp = np.array([])
         weight_temp = np.array([])
+        live_temp = np.array([], dtype=bool)
         
         # Loop over each valid starting period
         for t in range(T_max - T):
             these = np.ones(obs,dtype=bool) # Start with all observations
             for s in range(0,T,wave_length): # Keep only the ones that are bad for T waves straight
                 these = np.logical_and(these, bad_health[:,t+s])
-            these = np.logical_and(these,observed[:,t+T])
+            
+            these = np.logical_and(these, observed[:,t+T])
             age_temp = np.append(age_temp, age_data[these] + t*age_incr)
             switch_temp = np.append(switch_temp, good_health[these,t+T])
             weight_temp = np.append(weight_temp, weight_data[these])
+            live_temp = np.append(live_temp, alive[these,t+T])
             
         # Loop over each age to find qualifying observations within age tolerance
         for j in range(age_count_B):
             age = age_min + age_incr*j
             age_lo = age - age_tol
             age_hi = age + age_tol
-            those = np.logical_and(age_temp >= age_lo, age_temp <= age_hi)
-            Bad2GoodArray_data[T/wave_length-1,j+T-1] = np.dot(switch_temp[those],weight_temp[those])/np.sum(weight_temp[those])
+            these = np.logical_and(age_temp >= age_lo, age_temp <= age_hi) # Right age and observed
+            those = np.logical_and(these, live_temp) # Right age and actually alive next period
+            Bad2GoodArray_data[T//wave_length-1,j+T-1] = np.dot(switch_temp[those],weight_temp[those])/np.sum(weight_temp[those])
+            Bad2DeadArray_data[T//wave_length-1,j+T-1] = np.dot(np.logical_not(live_temp[these]),weight_temp[these])/np.sum(weight_temp[these])
             
     # Initialize good to bad duration dependence array for the data
     Good2BadArray_data = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
+    Good2DeadArray_data = np.zeros((T_back,age_count_B+T_back*wave_length)) + np.nan
     
     # Loop over each duration
     for T in range(wave_length,(T_back+1)*wave_length,wave_length):
         age_temp = np.array([])
         switch_temp = np.array([])
         weight_temp = np.array([])
+        live_temp = np.array([], dtype=bool)
         
         # Loop over each valid starting period
         for t in range(T_max - T):
             these = np.ones(obs,dtype=bool) # Start with all observations
             for s in range(0,T,wave_length): # Keep only the ones that are good for T waves straight
                 these = np.logical_and(these, good_health[:,t+s])
-            these = np.logical_and(these,observed[:,t+T])
+            
+            these = np.logical_and(these, observed[:,t+T])
             age_temp = np.append(age_temp, age_data[these] + t*age_incr)
             switch_temp = np.append(switch_temp, bad_health[these,t+T])
             weight_temp = np.append(weight_temp, weight_data[these])
+            live_temp = np.append(live_temp, alive[these,t+T])
             
         # Loop over each age to find qualifying observations within age tolerance
         for j in range(age_count_B):
             age = age_min + age_incr*j
             age_lo = age - age_tol
             age_hi = age + age_tol
-            those = np.logical_and(age_temp >= age_lo, age_temp <= age_hi)
-            Good2BadArray_data[T/wave_length-1,j+T-1] = np.dot(switch_temp[those],weight_temp[those])/np.sum(weight_temp[those])
+            these = np.logical_and(age_temp >= age_lo, age_temp <= age_hi) # Right age and observed
+            those = np.logical_and(these, live_temp) # Right age and actually alive next period
+            Good2BadArray_data[T//wave_length-1,j+T-1] = np.dot(switch_temp[those],weight_temp[those])/np.sum(weight_temp[those])
+            Good2DeadArray_data[T//wave_length-1,j+T-1] = np.dot(np.logical_not(live_temp[these]),weight_temp[these])/np.sum(weight_temp[these])
             
     colors = ['b','r','g','m','c']
     if 0 in sex_list:
@@ -1792,14 +2018,15 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
     for t in range(T_back):
         plt.plot(age_vec,Bad2GoodArray_data[t,:],'-' + colors[t])
     plt.xlabel('Age')
-    plt.ylabel('Probability of becoming "healthy"')
+    plt.ylabel('Probability of being "healthy" next wave')
     plt.title('Duration dependence when "unhealthy", ' + who_text)
     plt.xlim([age_min,age_max - T_max*age_incr])
     plt.ylim([0.0,0.7])
     plt.legend(bad_labels, loc=1)
+    plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_word + 'DurDepT' + str(T_back) + 'B2G.pdf'
-        plt.savefig(filename)
+        plt.savefig(filename, bbox_inches='tight')
     plt.show()
     if save_fig:
         print('Saved figure to ' + filename)
@@ -1811,19 +2038,219 @@ def makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,Health
     for t in range(T_back):
         plt.plot(age_vec,Good2BadArray_data[t,:],'-' + colors[t])
     plt.xlabel('Age')
-    plt.ylabel('Probability of becoming "unhealthy"')
+    plt.ylabel('Probability of being "unhealthy" next wave')
     plt.title('Duration dependence when "healthy", ' + who_text)
     plt.xlim([age_min,age_max - T_max*age_incr])
     plt.ylim([0.0,0.25])
     plt.legend(good_labels, loc=2)
+    plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_word + 'DurDepT' + str(T_back) + 'G2B.pdf'
+        plt.savefig(filename, bbox_inches='tight')
+    plt.show()
+    if save_fig:
+        print('Saved figure to ' + filename)
+        
+    for t in range(T_back):
+        plt.plot(age_vec, np.log(Bad2DeadArray_model[t,:]), '--' + colors[t])
+    for t in range(T_back):
+        plt.plot(age_vec, np.log(Bad2DeadArray_data[t,:]), '-' + colors[t])
+    plt.xlabel('Age')
+    plt.ylabel('Probability of dying before next wave')
+    plt.title('Duration dependence when "unhealthy", ' + who_text)
+    plt.xlim([50, age_max - T_max*age_incr])
+    plt.ylim([-4.0,-0.9])
+    plt.legend(bad_labels, loc=2)
+    plt.show()
+    
+    for t in range(T_back):
+        plt.plot(age_vec, np.log(Good2DeadArray_model[t,:]), '--' + colors[t])
+    for t in range(T_back):
+        plt.plot(age_vec, np.log(Good2DeadArray_data[t,:]), '-' + colors[t])
+    plt.xlabel('Age')
+    plt.ylabel('Probability of dying before next wave')
+    plt.title('Duration dependence when "healthy", ' + who_text)
+    plt.xlim([50, age_max - T_max*age_incr])
+    plt.ylim([-6,-1.8])
+    plt.legend(good_labels, loc=2)
+    plt.show()
+    
+    
+def makeMortDurDepFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,save_fig):
+    '''
+    Make a figure showing how the probability of death depends on whether the
+    respondent has just switched into this (binary) SRHS state or has been there
+    for at least two periods.
+    
+    Parameters
+    ----------
+    LivPrbArray : np.array
+        Array of shape (2,age_count,x_count) with survival probabilities.
+    TransPrbArray : np.array
+        Array of shape (2,age_count,x_count,x_count) with transition probabilities
+        between health states at each sex and age.
+    ReportPrbArray : np.array
+        Array of shape (h_count,x_count) with the probability of reporting health
+        status h when the individual's true health is x.
+    HealthInitDstn : np.array
+        Array of shape (2,age_count,x_count) with the unconditional distribution
+        of continuous health x at age j and sex s.
+    save_fig : bool
+        Indicator for whether figures should be saved to /Figures.  Filenames
+        will be constructed automatically.
+    
+    Returns
+    -------
+    None
+    '''
+    age_tol = 2
+    
+    histories_of_interest = [
+        [0,0],
+        [1,0],
+        [1,1],
+        [0,1]
+    ]
+    history_labels = [
+        'Unhealthy-Unhealthy',
+        'Healthy-Unhealthy',
+        'Healthy-Healthy',
+        'Unhealthy-Healthy'
+    ]
+    
+    # histories_of_interest = [
+    #     [0],
+    #     [1]
+    # ]
+    # history_labels = [
+    #     'Bad','Good'
+    # ]
+    
+    # Make a simplified report array with only two health states
+    SRHS_bad = [0,1]
+    SRHS_good = [2,3,4]
+    BinaryPrbArray = np.zeros((2,ReportPrbArray.shape[1]))
+    for h in SRHS_bad:
+        BinaryPrbArray[0,:] += ReportPrbArray[h,:]
+    for h in SRHS_good:
+        BinaryPrbArray[1,:] += ReportPrbArray[h,:]
+        
+    # Get cumulative survival probabilities for men and women up to age j
+    LivPrb_model = np.zeros((2,age_count_B))
+    for s in sex_list:
+        for j in range(age_count_B):
+            LivPrb_model[s,j] = np.dot(HealthInitDstn[s,j,:],LivPrbArray[s,j,:])
+    CumLivPrb_model = np.cumprod(np.concatenate((np.array([[1.],[1.]]),LivPrb_model),axis=1),axis=1)[:,:-1]
+    
+    # Initialize model mortality probabilities conditional on SRHS history
+    MortProbCond_model = np.zeros((len(histories_of_interest), age_count_B)) + np.nan
+    
+    # Loop through each age, simulating T_back*wave_length periods
+    for j in range(age_count_B):
+        # Get initial distribution of masses of men and women
+        MassInit = CumLivPrb_model[:,j]
+        
+        # Loop over each SRHS history of interest
+        for k in range(len(histories_of_interest)):
+            this_hist = histories_of_interest[k]
+            T = len(this_hist)
+            HealthDstnNow = copy(HealthInitDstn[:,j,:])
+            MassPrev = MassInit.copy()
+            PopMass = 0.
+            DeadMass = 0.
+            
+            # Loop over the sequence of observed SRHS in this history
+            for t in range(T*wave_length):
+                for s in sex_list:
+                    if (t % wave_length) == 0:
+                        tau = t // wave_length
+                        SRHS_now = this_hist[tau]
+                        HealthDstnNow[s,:] *= BinaryPrbArray[SRHS_now,:]
+                        MassPrev[s] = MassInit[s]*np.sum(HealthDstnNow[s,:])
+                    HealthDstnNow[s,:] *= LivPrbArray[s,j+t,:]
+                    TransPrbs = TransPrbArray[s,j+t,:,:]
+                    HealthDstnNow[s,:] = np.dot(np.transpose(TransPrbs),HealthDstnNow[s,:])
+            
+            # Compute the mortality rate conditional on this sequence of SRHS
+            for s in sex_list:
+                Alive = MassInit[s]*np.sum(HealthDstnNow[s,:])
+                PopMass += MassPrev[s]
+                DeadMass += MassPrev[s] - Alive
+            try:
+                MortProbCond_model[k,j+(T-1)*wave_length] = DeadMass / PopMass
+            except:
+                pass
+            
+    # Initialize data mortality probabilities conditional on SRHS history
+    MortProbCond_data = np.zeros((len(histories_of_interest), age_count_B)) + np.nan
+    observed = srhs_data >= 0
+    alive = srhs_data >= 1
+    good_health = np.logical_and(srhs_data >= 3, alive)
+    bad_health = np.logical_and(srhs_data < 3, alive)
+    
+    # Loop over the histories of interest
+    for k in range(len(histories_of_interest)):
+        this_hist = histories_of_interest[k]
+        age_temp = np.array([])
+        weight_temp = np.array([])
+        live_temp = np.array([], dtype=bool)
+        
+        T = len(this_hist)*wave_length
+        for t in range(T_max - T):
+            these = np.ones(obs,dtype=bool) # Start with all observations
+            for s in range(0,T,wave_length): # Keep only the ones that have the right health in each wave
+                this_srhs = this_hist[s//wave_length]
+                if this_srhs == 0:
+                    these = np.logical_and(these, bad_health[:,t+s])
+                elif this_srhs == 1:
+                    these = np.logical_and(these, good_health[:,t+s])
+            
+            these = np.logical_and(these, observed[:,t+T])
+            age_temp = np.append(age_temp, age_data[these] + t*age_incr) #+ (T-1)*age_incr)
+            weight_temp = np.append(weight_temp, weight_data[these])
+            live_temp = np.append(live_temp, alive[these,t+T])
+            
+        # Loop over each age to find qualifying observations within age tolerance
+        for j in range(age_count_B):
+            age = age_min + age_incr*j
+            age_lo = age - age_tol
+            age_hi = age + age_tol
+            these = np.logical_and(age_temp >= age_lo, age_temp <= age_hi) # Right age and observed
+            MortProbCond_data[k,j] = np.dot(np.logical_not(live_temp[these]), weight_temp[these]) / np.sum(weight_temp[these])
+        
+    
+    colors = ['b','r','g','m','c']
+    if 0 in sex_list:
+        who_text = 'women in '
+        who_alt = 'Women'
+        if 1 in sex_list:
+            who_text = 'people in '
+            who_alt = 'All'
+    elif 1 in sex_list:
+        who_text = 'men in '
+        who_alt = 'Men'
+    who_text += source_name
+    
+    # Make a plot
+    age_vec = age_min + age_incr*np.arange(age_count_B)
+    for k in range(len(histories_of_interest)):
+        plt.plot(age_vec, np.log(MortProbCond_model[k,:]),'--' + colors[k])
+    for k in range(len(histories_of_interest)):
+        plt.plot(age_vec, np.log(MortProbCond_data[k,:]),'-' + colors[k])
+    plt.xlim(50, age_max - T_max*age_incr)
+    plt.ylim(-6,-1)
+    plt.legend(history_labels, loc=4)
+    plt.xlabel('Age')
+    plt.ylabel('Log probability of death before next wave')
+    plt.title('Mortality conditional on recent SRHS, ' + who_text)
+    if save_fig:
+        filename = '../Figures/' + figure_label + who_alt + 'MortDurDep.pdf'
         plt.savefig(filename)
     plt.show()
     if save_fig:
         print('Saved figure to ' + filename)
-    
-    
+
+
 def makeHealthDstnByAgeFigure(HealthInitDstn, save_fig):
     '''
     Make figures plotting quantiles of latent health index x_t by age.
@@ -1842,10 +2269,16 @@ def makeHealthDstnByAgeFigure(HealthInitDstn, save_fig):
     pctiles = [0.05,0.25,0.50,0.75,0.95]
     age_vec = age_min + age_incr*np.arange(age_count_B)
     
+    # HealthInitDstnX = np.zeros((2, age_count_B, x_count_cond))
+    # for i in range(report_type_count):
+    #     bot = i*x_count_cond
+    #     top = (i+1)*x_count_cond
+    #     HealthInitDstnX += HealthInitDstn[:,:,bot:top]
+    
     if 0 in sex_list:
         xPercentiles = np.zeros((age_count_B,5)) + np.nan
         for j in range(age_count_B):
-            xPercentiles[j,:] = getPercentiles(x_grid, weights=HealthInitDstn[0,j,:], percentiles=pctiles, presorted=True)
+            xPercentiles[j,:] = getPercentiles(x_grid_rep, weights=HealthInitDstn[0,j,:], percentiles=pctiles, presorted=False)
             
         line_styles = ['-.r','--r','-r','--r','-.r']
         for p in range(5):
@@ -1866,7 +2299,7 @@ def makeHealthDstnByAgeFigure(HealthInitDstn, save_fig):
     if 1 in sex_list:
         xPercentiles = np.zeros((age_count_B,5)) + np.nan
         for j in range(age_count_B):
-            xPercentiles[j,:] = getPercentiles(x_grid, weights=HealthInitDstn[1,j,:], percentiles=pctiles, presorted=True)
+            xPercentiles[j,:] = getPercentiles(x_grid_rep, weights=HealthInitDstn[1,j,:], percentiles=pctiles, presorted=False)
         
         line_styles = ['-.b','--b','-b','--b','-.b']
         for p in range(5):
@@ -1876,7 +2309,7 @@ def makeHealthDstnByAgeFigure(HealthInitDstn, save_fig):
         plt.legend(['5th & 95th pctiles', '25th & 50th pctiles', '50th pctile'], loc=9, bbox_to_anchor=(0.5,-0.15), ncol=3)
         plt.title('Distribution of latent health by age, men in ' + source_name)
         plt.xlim(age_vec[0], age_vec[-1])
-        plt.tight_layout(hpad=1.2)
+        plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'HealthDstnMen.pdf'
             plt.savefig(filename)
@@ -1930,9 +2363,11 @@ def makeCorrFigure(Corr0,CorrAge1,CorrAge2,CorrAge3,CorrAge4,save_data,save_fig)
     plt.ylabel(r'Correlation on latent health $x_t$')
     plt.title('Correlation coefficient by age, ' + who_text)
     plt.xlim(AgeVec[0],AgeVec[-1])
+    plt.ylim(0.95,1.0)
+    plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_word + 'Corr.pdf'
-        plt.savefig(filename)
+        plt.savefig(filename, bbox_inches='tight')
     plt.show()
     if save_fig:
         print('Saved figure to ' + filename)
@@ -1952,16 +2387,21 @@ def makeCorrFigure(Corr0,CorrAge1,CorrAge2,CorrAge3,CorrAge4,save_data,save_fig)
         print('Wrote data to ' + filename)
     
     
-def makeStateCountFigure(param_vec, age_bot, age_top, T_ahead, save_fig):
+def makeStateCountFigures(param_vec, sex, age_bot, age_top, T_ahead, save_fig):
     '''
     Make a figure plotting the number of observed "unhealthy" periods conditional
     on being healthy or unhealthy at t=0, counting T_ahead waves forward.  Compares
     empirical data counts (using balanced panel only) vs model prediction.
     
+    Also makes a figure showing the distribution of the number of different SRHS
+    categories in the empirical data and predicted by the model.
+    
     Parameters
     ----------
     param_vec : np.array
         Array of parameters that could be used in the objective function.
+    sex : [int]
+        List of sexes to include: 0 for female, 1 for male
     age_bot : float
         Minimum age of respondents to include in sample.
     age_top : float
@@ -1976,15 +2416,25 @@ def makeStateCountFigure(param_vec, age_bot, age_top, T_ahead, save_fig):
     None
     '''
     UnhealthyFreq_data = np.zeros((2,T_ahead+1))
+    StatesVisitedFreq_data = np.zeros(h_count)
     
     # Loop through starting waves in the data, looking for valid observations.
     # An observation is valid if it is observed in this wave *and* the next T_ahead waves.
+    right_sex = np.zeros_like(sex_data, dtype=bool)
+    for s in sex:
+        right_sex = np.logical_or(right_sex, sex_data == s)
     for t in range(T_max - wave_length*T_ahead):
         age_temp = age_data + t*age_incr
         right_age = np.logical_and(age_temp >= age_bot, age_temp <= age_top)
+        right_age_and_sex = np.logical_and(right_age, right_sex)
         srhs_temp = srhs_data[:,t+np.arange(0, wave_length*(T_ahead+1), step=wave_length)]
         srhs_obs = np.sum(srhs_temp > 0, axis=1) == (T_ahead+1)
-        these = np.logical_and(right_age, srhs_obs) # flag for valid observations
+        these = np.logical_and(right_age_and_sex, srhs_obs) # flag for valid observations
+        StateCount_temp = np.zeros(np.sum(these))
+        for h in range(h_count):
+            StateCount_temp += np.any(srhs_temp[these,:] == (h+1), axis=1)
+        for n in range(1,h_count+1):
+            StatesVisitedFreq_data[n-1] += np.dot((StateCount_temp == n), weight_data[these])
         
         # Count the number of times each respondent reports "unhealthy" SRHS in future
         # periods, and whether they were healthy or unhealthy at the start
@@ -2001,80 +2451,163 @@ def makeStateCountFigure(param_vec, age_bot, age_top, T_ahead, save_fig):
     row_sum = np.sum(UnhealthyFreq_data, axis=1)
     UnhealthyFreq_data[0,:] /= row_sum[0]
     UnhealthyFreq_data[1,:] /= row_sum[1]
+    StatesVisitedFreq_data /= np.sum(StatesVisitedFreq_data)
     
     # Initialize objects to make simulated SRHS data
     UnhealthyFreq_sim = np.zeros((2,T_ahead+1))
+    StatesVisitedFreq_sim = np.zeros(h_count)
     age_vec = np.arange(age_bot, age_top+age_incr, step=age_incr)
-    sex = sex_list[0]
     AgentCount = 100000
     
     # Loop through each age in the selected range, simulating data and adding it to frequencies
-    for age in age_vec:
-        # Make simulated data and a population weight for this age
-        srhs_sim = makeSimulatedSRHSdata(param_vec, sex, age, wave_length*T_ahead+1, AgentCount)
-        srhs_temp = srhs_sim[:,np.arange(0, wave_length*(T_ahead+1), step=wave_length)]
-        weight_temp = np.dot(age == age_data, weight_data) # Sum of all weights in data for this age
-        these = srhs_temp[:,-1] > 0 # Only use simulated agents that survive all periods
-        
-        # Count the number of times each respondent reports "unhealthy" SRHS in future
-        # periods, and whether they were healthy or unhealthy at the start
-        unhealthy_counts = np.sum(srhs_temp[these,1:] < 3, axis=1)
-        unhealthy_init = srhs_temp[these,0] < 3
-        healthy_init = np.logical_not(unhealthy_init)
-        
-        # Add (weighted) frequencies to our running tally of balanced panel counts
-        for n in range(T_ahead+1):
-            UnhealthyFreq_sim[0,n] += weight_temp*np.sum(unhealthy_init*(unhealthy_counts==n))
-            UnhealthyFreq_sim[1,n] += weight_temp*np.sum(healthy_init*(unhealthy_counts==n))
-            #UnhealthyFreq_sim[1,n] += np.dot(healthy_init, unhealthy_counts==n)
-            #UnhealthyFreq_sim[0,n] += np.sum(unhealthy_counts==n)
+    for s in sex:
+        right_sex = sex_data == s
+        for age in age_vec:
+            # Make simulated data and a population weight for this age
+            srhs_sim = makeSimulatedSRHSdata(param_vec, s, age, wave_length*T_ahead+1, AgentCount)
+            srhs_temp = srhs_sim[:,np.arange(0, wave_length*(T_ahead+1), step=wave_length)]
+            those = np.logical_and(age_data == age, right_sex)
+            weight_temp = np.dot(those, weight_data) # Sum of all weights in data for this age
+            these = srhs_temp[:,-1] > 0 # Only use simulated agents that survive all periods
+            StateCount_temp = np.zeros(np.sum(these))
+            for h in range(h_count):
+                StateCount_temp += np.any(srhs_temp[these,:] == (h+1), axis=1)
+            for n in range(1,h_count+1):
+                StatesVisitedFreq_sim[n-1] += np.sum(StateCount_temp == n)*weight_temp
             
+            # Count the number of times each respondent reports "unhealthy" SRHS in future
+            # periods, and whether they were healthy or unhealthy at the start
+            unhealthy_counts = np.sum(srhs_temp[these,1:] < 3, axis=1)
+            unhealthy_init = srhs_temp[these,0] < 3
+            healthy_init = np.logical_not(unhealthy_init)
+            
+            # Add (weighted) frequencies to our running tally of balanced panel counts
+            for n in range(T_ahead+1):
+                UnhealthyFreq_sim[0,n] += weight_temp*np.sum(unhealthy_init*(unhealthy_counts==n))
+                UnhealthyFreq_sim[1,n] += weight_temp*np.sum(healthy_init*(unhealthy_counts==n))
+    
     # Normalize by sum of observations to turn frequencies into probabilities
     row_sum = np.sum(UnhealthyFreq_sim, axis=1)
     UnhealthyFreq_sim[0,:] /= row_sum[0]
     UnhealthyFreq_sim[1,:] /= row_sum[1]
+    StatesVisitedFreq_sim /= np.sum(StatesVisitedFreq_sim)
     
-    if sex == 0:
-        sex_word = 'Women'
+    # Initialize objects to make naive SRHS data
+    UnhealthyFreq_naive = np.zeros((2,T_ahead+1))
+    StatesVisitedFreq_naive = np.zeros(h_count)
+    age_vec = np.arange(age_bot, age_top+age_incr, step=age_incr)
+    AgentCount = 100000
+    
+    # Loop through each age in the selected range, simulating data and adding it to frequencies
+    for s in sex:
+        right_sex = sex_data == s
+        for age in age_vec:
+            # Make simulated data and a population weight for this age
+            srhs_naive = makeNaiveSRHSdata(s, age, T_ahead+1, AgentCount)
+            srhs_temp = srhs_naive.copy() # Don't need to adjust
+            those = np.logical_and(age_data == age, right_sex)
+            weight_temp = np.dot(those, weight_data) # Sum of all weights in data for this age
+            these = srhs_temp[:,-1] > 0 # Only use simulated agents that survive all periods
+            StateCount_temp = np.zeros(np.sum(these))
+            for h in range(h_count):
+                StateCount_temp += np.any(srhs_temp[these,:] == (h+1), axis=1)
+            for n in range(1,h_count+1):
+                StatesVisitedFreq_naive[n-1] += np.sum(StateCount_temp == n)*weight_temp
+            
+            # Count the number of times each respondent reports "unhealthy" SRHS in future
+            # periods, and whether they were healthy or unhealthy at the start
+            unhealthy_counts = np.sum(srhs_temp[these,1:] < 3, axis=1)
+            unhealthy_init = srhs_temp[these,0] < 3
+            healthy_init = np.logical_not(unhealthy_init)
+            
+            # Add (weighted) frequencies to our running tally of balanced panel counts
+            for n in range(T_ahead+1):
+                UnhealthyFreq_naive[0,n] += weight_temp*np.sum(unhealthy_init*(unhealthy_counts==n))
+                UnhealthyFreq_naive[1,n] += weight_temp*np.sum(healthy_init*(unhealthy_counts==n))
+    
+    # Normalize by sum of observations to turn frequencies into probabilities
+    row_sum = np.sum(UnhealthyFreq_naive, axis=1)
+    UnhealthyFreq_naive[0,:] /= row_sum[0]
+    UnhealthyFreq_naive[1,:] /= row_sum[1]
+    StatesVisitedFreq_naive /= np.sum(StatesVisitedFreq_naive)
+    
+    if 0 in sex:
+        if 1 in sex:
+            sex_word = 'People'
+            sex_word_lower = 'people'
+            sex_alt = 'All'
+        else:
+            sex_word = 'Women'
+            sex_word_lower = 'women'
+            sex_alt = sex_word
     else:
         sex_word = 'Men'
+        sex_word_lower = 'men'
+        sex_alt = sex_word
     
     # Plot data vs simulated distribution of unhealthy periods conditional on being unhealthy
     for t in range(T_ahead+1):
+        x = UnhealthyFreq_naive[0,t]
         y = UnhealthyFreq_data[0,t]
         z = UnhealthyFreq_sim[0,t]
-        plt.fill([t-0.33,t,t,t-0.33], [0.,0.,y,y], color='b')
-        plt.fill([t+0.35,t+0.02,t+0.02,t+0.35], [0.,0.,z,z], color='r')
-    plt.xlim(-0.75, T_ahead+0.75)
-    plt.ylim(0., 0.80)
+        plt.fill([t-0.40,t-0.15,t-0.15,t-0.40], [0.,0.,x,x], color='r')
+        plt.fill([t-0.14,t+0.14,t+0.14,t-0.14], [0.,0.,y,y], color='b')
+        plt.fill([t+0.40,t+0.15,t+0.15,t+0.4], [0.,0.,z,z], color='g')
+    plt.xlim(-0.5, T_ahead+0.5)
+    plt.ylim(0., 0.85)
     plt.xlabel('Number of subsequent waves reporting "unhealthy"')
     plt.ylabel('Fraction of respondents')
     plt.title(sex_word + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name + ' who report being "unhealthy"')
-    plt.legend(['Data','Model'])
+    plt.legend(['Simple','Data','Model'])
     plt.tight_layout()
     if save_fig:
-        filename = '../Figures/' + figure_label + sex_word + 'SRHSfreqU' + str(age_bot) + 'to' + str(age_top) + '.pdf'
-        plt.savefig(filename)
+        filename = '../Figures/' + figure_label + sex_alt + 'SRHSfreqU' + str(age_bot) + 'to' + str(age_top) + '.pdf'
+        plt.savefig(filename, bbox_inches='tight')
     plt.show()
     if save_fig:
         print('Saved figure to '+ filename)
     
     # Plot data vs simulated distribution of unhealthy periods conditional on being healthy
     for t in range(T_ahead+1):
+        x = UnhealthyFreq_naive[1,t]
         y = UnhealthyFreq_data[1,t]
         z = UnhealthyFreq_sim[1,t]
-        plt.fill([t-0.33,t,t,t-0.33], [0.,0.,y,y], color='b')
-        plt.fill([t+0.35,t+0.02,t+0.02,t+0.35], [0.,0.,z,z], color='r')
-    plt.xlim(-0.75, T_ahead+0.75)
-    plt.ylim(0., 0.80)
+        plt.fill([t-0.40,t-0.15,t-0.15,t-0.40], [0.,0.,x,x], color='r')
+        plt.fill([t-0.14,t+0.14,t+0.14,t-0.14], [0.,0.,y,y], color='b')
+        plt.fill([t+0.40,t+0.15,t+0.15,t+0.4], [0.,0.,z,z], color='g')
+    plt.xlim(-0.5, T_ahead+0.5)
+    plt.ylim(0., 0.85)
     plt.xlabel('Number of subsequent waves reporting "unhealthy"')
     plt.ylabel('Fraction of respondents')
     plt.title(sex_word + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name + ' who report being "healthy"')
-    plt.legend(['Data','Model'])
+    plt.legend(['Simple','Data','Model'])
     plt.tight_layout()
     if save_fig:
-        filename = '../Figures/' + figure_label + sex_word + 'SRHSfreqH' + str(age_bot) + 'to' + str(age_top) + '.pdf'
-        plt.savefig(filename)
+        filename = '../Figures/' + figure_label + sex_alt + 'SRHSfreqH' + str(age_bot) + 'to' + str(age_top) + '.pdf'
+        plt.savefig(filename, bbox_inches='tight')
+    plt.show()
+    if save_fig:
+        print('Saved figure to '+ filename)
+        
+    # Plot distribution of number of SRHS categories visited
+    plt.xlim(0.5, h_count+0.5)
+    plt.ylim(0.,0.6)
+    plt.xlabel('# of SRHS categories reported over ' + str(T_ahead+1) + ' consecutive waves')
+    plt.ylabel('Fraction of respondents')
+    for n in range(h_count):
+        t = n+1
+        x = StatesVisitedFreq_naive[n]
+        y = StatesVisitedFreq_data[n]
+        z = StatesVisitedFreq_sim[n]
+        plt.fill([t-0.40,t-0.15,t-0.15,t-0.40], [0.,0.,x,x], color='r')
+        plt.fill([t-0.14,t+0.14,t+0.14,t-0.14], [0.,0.,y,y], color='b')
+        plt.fill([t+0.40,t+0.15,t+0.15,t+0.4], [0.,0.,z,z], color='g')
+    plt.title('SRHS categories attained, ' + sex_word_lower + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name)
+    plt.legend(['Simple','Data','Model'])
+    plt.tight_layout()
+    if save_fig:
+        filename = '../Figures/' + figure_label + sex_alt + 'StateCount' + str(age_bot) + 'to' + str(age_top) + '.pdf'
+        plt.savefig(filename, bbox_inches='tight')
     plt.show()
     if save_fig:
         print('Saved figure to '+ filename)
@@ -2145,6 +2678,67 @@ def makeConstantSRHSfigure(param_vec, save_fig):
     if save_fig:
         print('Saved figure to ' + filename)
 
+
+def makeHealthShockDstnFigure(ShkAvgs, ShkStds, ShkPrbs, save_fig):
+    '''
+    Make a simple figure plotting a mixed normal distribution of latent health shocks.
+    By construction, the overall distribution is mean 0, stdev 1.
+
+    Parameters
+    ----------
+    ShkAvgs : [float]
+        List of conditional means for the mixed-normal health shock distribution.
+    ShkStds : [float]
+        List of conditional standard deviations for the mixed-normal health shock dstn.
+    ShkPrbs : [float]
+        Probabilities of each of the components of the mixed normal distribution.
+    save_fig : bool
+        Indicator for whether the figure should be saved to ../Figures.
+
+    Returns
+    -------
+    None
+    '''
+    bot = -7.0
+    top = 7.0
+    N = 301
+    ShkVec = np.linspace(bot,top,N)
+    
+    PDFvec = np.zeros(N)
+    for j in range(len(ShkAvgs)):
+        PDFvec += ShkPrbs[j]*norm.pdf((ShkVec - ShkAvgs[j])/ShkStds[j])
+    
+    if len(sex_list) == 1:
+        sex = sex_list[0]
+        if sex == 0:
+            sex_word = 'women'
+            sex_word_alt = 'Women'
+        else:
+            sex_word = 'men'
+            sex_word_alt = 'Men'
+    else:
+        sex_word = 'people'
+        sex_word_alt = 'All'
+    
+    y_top = 0.5
+    plt.plot(ShkVec, PDFvec, '-b')
+    plt.xlim(bot,top)
+    plt.ylim(-0.001, y_top)
+    plt.xlabel('One period latent health shock')
+    plt.ylabel('Probability density')
+    plt.title('Latent health shock distribution, ' + sex_word + ' in ' + source_name)
+    ypos = 0.95*y_top
+    xpos = bot + (top-bot)*0.45
+    shock_string = "{prob:.1f}%: mean = {mean:.2f}, stdev = {stdev:.2f}"
+    plt.tight_layout()
+    for j in range(len(ShkAvgs)):
+        this_shock = shock_string.format(prob=ShkPrbs[j]*100, mean=ShkAvgs[j], stdev=ShkStds[j])
+        plt.text(xpos,ypos,this_shock)
+        ypos -= 0.06*y_top
+    if save_fig:
+        filename = '../Figures/' + figure_label + sex_word_alt + 'ShockPDF.pdf'
+        plt.savefig(filename, bbox_inches='tight')
+    plt.show()
 
 
 def makeSimulatedSRHSdata(param_vec, sex, age_0, T_sim, N_agents):
@@ -2279,6 +2873,71 @@ def calcNaiveTransProbs():
     HealthInitDstnNaive = HealthInitDstnNaive / np.tile(np.reshape(np.sum(HealthInitDstnNaive,axis=2),(2,age_count_A,1)),(1,1,h_count))
     HealthInitDstnNaive[np.isnan(HealthInitDstnNaive)] = 0.0
     return LivPrbNaiveArray, TransPrbNaiveArray, HealthInitDstnNaive
+
+
+def makeNaiveSRHSdata(sex, age_0, T_sim, N_agents):
+    '''
+    Make simulated SRHS data using simple/naive transition probabilities.  Agents
+    all have same sex and start at same age and are simulated for T_sim periods.
+    
+    Parameters
+    ----------
+    sex : int
+        0 or 1 indicating female or male.
+    age_0 : float
+        Age in years at which simulated agents begin.
+    T_sim : int
+        Number of waves of data to simulate, including the initial wave.
+    N_agents : int
+        Number of respondents to simulate.
+        
+    Returns
+    -------
+    srhs_sim : np.array
+        Integer array of shape (N_agents, T_sim) with simulated SRHS data.
+    '''
+    # Initialize RNG and output, and calculate index of starting age
+    RNG = np.random.RandomState(138)
+    srhs_sim = -np.ones((N_agents, T_sim), dtype=int)
+    t0 = int(np.round((age_0 - age_min)/age_incr))
+    H = np.arange(1, h_count+1, dtype=int)
+    
+    def drawSeed():
+        return int(np.floor((2**32-1)*RNG.rand()))
+    
+    # Calculate transition and initial probabilities
+    LivPrbArray, TransPrbArray, HealthInitDstn = calcNaiveTransProbs()
+    
+    # Draw initial latent health states for the agents
+    s = sex
+    t = t0
+    P = HealthInitDstn[s,t,:]
+    hNow = drawDiscrete(N_agents, P, H, seed=drawSeed()).astype(int)
+    
+    # For each of the next T_sim periods, simulate SRHS draws, mortality, and health shocks
+    for i in range(T_sim):
+        srhs_sim[:,i] = hNow
+            
+        # Simulate mortality using LivPrbArray
+        pLiv = np.zeros(N_agents)
+        these = hNow > 0
+        pLiv[these] = LivPrbArray[s,t,hNow[these]-1]
+        mort_draws = RNG.rand(N_agents)
+        hNow[mort_draws > pLiv] = 0 # These agents are dead
+            
+        # Simulate health shocks using TransPrbArray
+        hNext = np.copy(hNow)
+        for h in range(1,h_count+1):
+            these = hNow == h
+            num = np.sum(these)
+            P = TransPrbArray[s,t,h-1,:]
+            hNext[these] = drawDiscrete(num, P, H, seed=drawSeed()).astype(int)
+        
+        # Move to the next age
+        hNow = hNext
+        t += 1
+        
+    return srhs_sim
 
 
 def makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
@@ -2574,7 +3233,7 @@ def writeParamsToFile(param_vec, filename):
         f.write(write_str)
         f.close()           
     
-# Make list parameter names that don't depend on measures
+# Make a list parameter names that don't depend on measures or heterogeneity
 param_names_base = [
         'Mort0',
         'MortSex',
@@ -2603,6 +3262,19 @@ param_names_base = [
         'xInitMean',
         'xInitStd']
 
+# Add parameters for mixed normal health shocks
+if mixed_health_shocks:
+    mixed_param_names = ['HealthShockAvg1','HealthShockLogStd1','HealthShockLogit1']
+else:
+    mixed_param_names = []
+
+# Add parameter names for heterogeneous reporting error std
+type_param_names = []
+for n in range(report_type_count-1):
+    type_param_names.append('SRHSlogStd' + str(n+1))
+for n in range(report_type_count-1):
+    type_param_names.append('TypeLogit' + str(n+1))
+
 # Construct measure-specific parameter names
 to_add = []
 for j in range(measure_count):
@@ -2620,20 +3292,22 @@ for j in range(measure_count):
         to_add.append(this_name + 'Cut' + str(k))
 
 # Combine the parameter name lists
-param_names = param_names_base + to_add
+param_names = param_names_base + mixed_param_names + type_param_names + to_add
 
 
 if __name__ == '__main__':
     
     # Choose what kind of work to do
     describe_data = False              # Print a description of the data to screen
-    test_function = False              # Run the LL function once and report timing
+    test_function = True               # Run the LL function once and report timing
     make_figs = False                  # Produce selected figures and display on screen
     save_figs = False                  # Save those figures to disk (only relevant if ^^ is True)
     vary_one_param = False             # Produce a simple plot of LL function vs one model parameter
     estimate_model = False             # Estimate structural model parameters
     calc_std_errs = False              # Calculate standard errors by inverting the Hessian of the LL func
+    make_data_for_table = False        # Make a data file with parameters and standard errors to report in paper
     make_predicted_health_data = False # Make a file with predicted latent health (squared) by age and SRHS sequence
+    get_type_probs = False             # Extract ex-post reporting type probabilities (after running LL function)
     est_age_group_params = False       # DEPRECATED: Estimate model on a small range of ages from the MEPS
     convert_param_format = False       # DEPRECATED: Convert between parameter formats, only needed in past
     
@@ -2643,24 +3317,25 @@ if __name__ == '__main__':
     which_bool[which_indices] = True
     
     if describe_data: # Print a description of the data to screen
-        print(describeData())
+        data_desc, SRHS_count, death_count = describeData()
+        print(data_desc)
     
     if test_function: # Run and time one log likelihood evaluation
         t0 = time()
         LL = LLfunction(test_param_vec)
         t1 = time()
-        print('Running the log likelihood function took ' + str(t1-t0) + ' seconds.')
+        print('Running the log likelihood function took ' + '{:.3f}'.format(t1-t0) + ' seconds.')
     
     if make_figs: # Produce a whole bunch of figures
         t0 = time()
         makeFigures(test_param_vec, save_figs)
         t1 = time()
-        print('Making post-estimation figures took ' + str(t1-t0) + ' seconds.')
+        print('Making post-estimation figures took ' + '{:.3f}'.format(t1-t0) + ' seconds.')
     
     if vary_one_param: # Vary one parameter and plot (negative) log likelihood function
         N = 41
-        i = 22
-        X = np.linspace(-1,1,num=N)
+        i = 17
+        X = np.linspace(11.0,11.6,num=N)
         Y = np.zeros_like(X)
         my_params = copy(test_param_vec)
         t0 = time()
@@ -2668,14 +3343,14 @@ if __name__ == '__main__':
             my_params[i] = X[j]
             Y[j] = LLfunction(my_params)
         t1 = time()
-        print('Evaluating the LL function ' + str(N) + ' times took ' + str(t1-t0) + ' seconds.')
+        print('Evaluating the LL function ' + str(N) + ' times took ' + '{:.3f}'.format(t1-t0) + ' seconds.')
         plt.plot(X,Y)
         plt.xlabel(param_names[i])
         plt.ylabel('negative LL')
         plt.show()
     
     if estimate_model: # Estimate some (or all) of the model parameters
-        estimated_params = minimizeNelderMead(LLfunction,test_param_vec,verbose=True,which_vars=which_bool, maxiter=200000, maxfun=1000000, xtol=1e-6)
+        estimated_params = minimizeBFGS(LLfunction,test_param_vec,verbose=True,which=which_bool)#, maxiter=200000, maxfun=1000000, xtol=1e-6)
         print('Original function value = ' + str(LLfunction(test_param_vec)))
         writeParamsToFile(estimated_params,'EstimationProgress.txt')
         if not calc_std_errs:
@@ -2683,13 +3358,35 @@ if __name__ == '__main__':
                 i = which_indices[j]
                 print(param_names[i] + ' = ' + str(estimated_params[i]))
         
-    if calc_std_errs: # Calculate standard errors using just-estimated parameters
+    if calc_std_errs: # Calculate standard errors using just-estimated parameters (inverse of Hessian)
         if estimate_model:
             these_params = estimated_params
         else:
             these_params = test_param_vec
         hessian = calcHessian(LLfunction,these_params,0.00001,which_bool)
-        covar = np.linalg.inv(hessian)
+        inv_hess = np.linalg.inv(hessian)
+        
+        # Apply the Huber-White adjustment to the inverse Hessian if requested
+        use_huber_white = True
+        if use_huber_white:
+            J = which_indices.size
+            eps = 1e-6
+            dLdTheta = np.zeros((obs,J))
+            for j in range(J):
+                temp_params_down = these_params.copy()
+                temp_params_up = these_params.copy()
+                i = which_indices[j]
+                epsilon_i = np.abs(eps*these_params[i])
+                temp_params_down[i] -= epsilon_i
+                temp_params_up[i] += epsilon_i
+                ind_LL_up = LLfunction(temp_params_up, return_ind_LL=True)
+                ind_LL_down = LLfunction(temp_params_down, return_ind_LL=True)
+                dLdTheta[:,j] = (ind_LL_up - ind_LL_down) / (2*epsilon_i)
+            outer_product = np.dot(dLdTheta.transpose(), dLdTheta)
+            covar = np.dot(inv_hess, np.dot(outer_product, inv_hess))
+        else:
+            covar = inv_hess # Otherwise, treat the inverse Hessian as the covariance matrix
+            
         std_errs = np.sqrt(np.diag(covar))
         std_errs_alt = np.reshape(std_errs,(std_errs.size,1))
         se_prime = np.transpose(std_errs_alt)
@@ -2710,8 +3407,32 @@ if __name__ == '__main__':
             if which_bool[i]:
                 covar_big[i,which_bool] = covar[n,:]
                 n += 1
-        saveParamsAndStdErrs(parameterTransformation(these_params), standardErrorsFromCovarMatrix(covar_big), param_file_name)
+        saveParamsAndCovarMatrix(these_params,covar_big,param_file_name)        
+                
+    
+    if make_data_for_table: # Save transformed parameters and standard errors to file
+        if estimate_model:
+            these_params = estimated_params
+        else:
+            these_params = test_param_vec
+        if not calc_std_errs:
+            these_params, covar_big = readParamsAndCovarMatrix(param_file_name)
+        if not describe_data:
+            data_desc, SRHS_count, death_count = describeData()
+        if not test_function:
+            LL = LLfunction(these_params)
+            
+        temp_f = lambda x : makeParameterDict(x, True) # Parameter transformation as a vector
+        saveTableParamsAndStdErrs(temp_f(these_params),
+                                  calcDeltaMethodStdErrs(these_params,
+                                                         covar_big,
+                                                         temp_f),
+                                  LL,
+                                  obs,
+                                  SRHS_count+death_count,
+                                  param_file_name)
         
+            
     if make_predicted_health_data: # Make a data file with model prediction of latent health based on 2-3 observations of SRHS
         h3_vec = np.concatenate([h*np.ones(h_count**2, dtype=int) for h in range(1,h_count+1)])
         h2_vec = np.concatenate(h_count*[h*np.ones(h_count, dtype=int) for h in range(1,h_count+1)])
@@ -2725,38 +3446,66 @@ if __name__ == '__main__':
         
         my_dict = makeParameterDict(test_param_vec)
         LivPrbArray, TransPrbArray, ReportPrbArray, HealthInitDstn = makeProbArrays(**my_dict)
-        if 0 in sex_list:
-            s = 0
-        else:
-            s = 1
-        
-        T_predict = 2
+        T_predict = 3
         J = j_array.size
-        x_hat_array = np.zeros(J) + np.nan
-        xsq_hat_array = np.zeros(J) + np.nan
-        for i in range(J):
-            j = j_array[i]
-            x_vec = np.copy(HealthInitDstn[s,j,:])
-            for t in range(T_predict):
-                x_vec *= ReportPrbArray[h_array[i,t]-1,:]
-                x_vec /= np.sum(x_vec)
-                x_vec *= LivPrbArray[s,j+t,:]
-                x_vec /= np.sum(x_vec)
-                x_vec = np.dot(np.transpose(TransPrbArray[s,j+t,:,:]),x_vec)
-                x_vec /= np.sum(x_vec)
-            x_hat_array[i] = np.dot(x_grid, x_vec)
-            xsq_hat_array[i] = np.dot(xsq_grid, x_vec)
-            
+        
         outfile = '../Data/Results/' + param_file_name + 'Xhat.txt'
         f = open(outfile,'w')
-        for i in range(x_hat_array.size):
-            this_line = str(a_array[i]) + '\t'
-            for t in range(T_predict):
-                this_line += str(h_array[i,t]) + '\t'
-            this_line += str(x_hat_array[i])  + '\t' + str(xsq_hat_array[i]) + '\n'
-            f.write(this_line)
+        
+        # Loop over included sexes
+        for s in sex_list:
+            # Initialize the predicted latent health data for this sex
+            x_hat_array = np.zeros(J) + np.nan
+            xsq_hat_array = np.zeros(J) + np.nan
+            
+            # Loop over ages
+            for i in range(J):
+                j = j_array[i]
+                x_vec = np.copy(HealthInitDstn[s,j,:])
+                # Loop over observations of SRHS
+                for t in range(T_predict):
+                    x_vec *= ReportPrbArray[h_array[i,t]-1,:]
+                    x_vec /= np.sum(x_vec)
+                    x_vec *= LivPrbArray[s,j+t,:]
+                    x_vec /= np.sum(x_vec)
+                    x_vec = np.dot(np.transpose(TransPrbArray[s,j+t,:,:]),x_vec)
+                    x_vec /= np.sum(x_vec)
+                
+                # Combine latent health values across reporting types, then record expectations
+                x_alt = np.sum(np.reshape(x_vec, (report_type_count, x_count_cond)), axis=0)
+                x_hat_array[i] = np.dot(x_grid, x_alt)
+                xsq_hat_array[i] = np.dot(xsq_grid, x_alt)
+            
+            # Write the predicted latent health data to the file
+            for i in range(J):
+                this_line = str(s) + '\t' + str(a_array[i]) + '\t'
+                for t in range(T_predict):
+                    this_line += str(h_array[i,t]) + '\t'
+                this_line += str(x_hat_array[i])  + '\t' + str(xsq_hat_array[i]) + '\n'
+                f.write(this_line)
+        
+        # Report completion of exercise
         f.close()
         print('Wrote predicted latent health by age and ' + str(T_predict) + 'x SRHS to ' + outfile)
+        
+    if get_type_probs:
+        TypeProbArray = np.zeros((ind_count, report_type_count))
+        temp_out = np.zeros((ind_count, report_type_count))
+        for d in range(D):
+            queue[d].read_buffer(TypeProb_buf[d], temp_out)
+            TypeProbArray += temp_out
+            
+        outfile = '../Data/Results/' + param_file_name + 'TypeProbs.txt'
+        with open(outfile,'w') as f:
+            for i in range(ind_count):
+                this_line = str(id_data[i])
+                for k in range(report_type_count):
+                    this_line += '\t' + str(TypeProbArray[i,k])
+                this_line += '\n'
+                f.write(this_line)
+            f.close()
+        print('Wrote ex-post type probabilities to ' + outfile + '.')
+            
     
     ###############################################################################
     ### CODE BEYOND THIS POINT SHOULD NOT BE RUN, HAS NOT BEEN TESTED IN A WHILE ##

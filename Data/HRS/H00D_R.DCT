@@ -1,0 +1,18 @@
+dictionary using H00D_R.DA{ 
+  _column(1)     str6   HHID     %6s      "HOUSEHOLD IDENTIFIER"
+  _column(7)     str3   PN       %3s      "PERSON NUMBER"
+  _column(10)    str1   GSUBHH   %1s      "2000 SUB-HOUSEHOLD IDENTIFIER"
+  _column(11)    str1   FSUBHH   %1s      "1998 SUB-HOUSEHOLD IDENTIFIER"
+  _column(12)    str3   GPN_SP   %3s      "2000 SPOUSE/PARTNER PERSON NUMBER"
+  _column(15)    byte   GCSR     %1.0f    "2000 WHETHER COVERSHEET RESPONDENT"
+  _column(16)    byte   GFAMR    %1.0f    "2000 WHETHER FAMILY RESPONDENT"
+  _column(17)    byte   GFINR    %1.0f    "2000 WHETHER FINANCIAL RESPONDENT"
+  _column(18)    str1   GQDT     %1s      "2000 Q_NAIRE FILE"
+  _column(19)    str5   GQNR     %5s      "2000 QUESTIONNAIRE"
+  _column(24)    byte   G2504    %1.0f    "D157.FAM DECISION"
+  _column(25)    byte   G2505    %1.0f    "D157A.MORE SAY"
+  _column(26)    byte   G2506    %1.0f    "D157B.MORE SAY"
+  _column(27)    byte   G2507    %1.0f    "D158.TIME TOGETHER"
+  _column(28)    byte   G2508    %1.0f    "D159.FREE TIME"
+  _column(29)    int    GVERSION %3.0f    "2000 DATA RELEASE VERSION"
+}

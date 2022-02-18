@@ -1,0 +1,763 @@
+       \documentclass[12pt,pdftex,letterpaper]{article}
+            \usepackage{setspace}
+            \usepackage[dvips,]{graphicx} %draft option suppresses graphics dvi display
+%            \usepackage{lscape}
+%            \usepackage{latexsym}
+%            \usepackage{endnotes}
+%            \usepackage{epsfig}
+%           \singlespace
+            \setlength{\textwidth}{6.5in}
+            \setlength{\textheight}{9in}
+            \addtolength{\topmargin}{-\topmargin} 
+            \setlength{\oddsidemargin}{0in}
+            \setlength{\evensidemargin}{0in}
+            \addtolength{\headsep}{-\headsep}
+            \addtolength{\topskip}{-\topskip}
+            \addtolength{\headheight}{-\headheight}
+            \setcounter{secnumdepth}{2}
+%            \renewcommand{\thesection}{\arabic{section}}
+            % \renewcommand{\footnote}{\endnote}
+            \newtheorem{proposition}{Proposition}
+            \newtheorem{definition}{Definition}
+            \newtheorem{lemma}{lemma}
+            \newtheorem{corollary}{Corollary}
+            \newtheorem{assumption}{Assumption}
+            \newcommand{\Prob}{\operatorname{Prob}}
+            \clubpenalty 5000
+            \widowpenalty 5000
+            \renewcommand{\baselinestretch}{1.35}
+            
+            \usepackage{amsmath}
+            \usepackage{amsthm}
+            \usepackage{amsfonts}
+            \usepackage{amssymb}
+            \usepackage{bbm}
+            \usepackage{float}
+            \usepackage{graphicx}
+            \usepackage{multirow}
+            \usepackage{natbib}
+            \usepackage{longtable}
+            \usepackage{subcaption}
+            \usepackage{enumerate}
+            \usepackage{setspace}
+            \usepackage{cancel}
+            \usepackage{hyperref}
+%            \usepackage[nofiglist, notablist, nomarkers]{endfloat}
+            \usepackage{xr}
+            \externaldocument{HiddenHealth}
+            
+            \newcommand{\der}[2]{\frac{\text{d}#1}{\text{d}#2}}
+            \newcommand{\pd}[2]{\frac{\partial#1}{\partial#2}}
+            \newcommand{\E}{\operatorname{E}}
+            \newcommand{\N}{\mathbb{N}}
+            \newcommand{\R}{\mathbb{R}}
+            
+            \newcommand{\Health}{h}
+            \newcommand{\ExpHealth}{\overline{\Health}}
+            \newcommand{\Report}{x}
+            \newcommand{\Age}{j}
+            \newcommand{\AgeMin}{\underline{\Age}}
+            \newcommand{\AgeMax}{\overline{\Age}}
+            \newcommand{\AgeIncr}{\hat{\Age}}
+            \newcommand{\Corr}{\rho}
+            \newcommand{\HealthInitMean}{\mu_0}
+            \newcommand{\HealthInitStd}{\sigma_0}
+            \newcommand{\Cut}{\chi}
+            \newcommand{\MortParam}{\theta}
+            \newcommand{\CorrParam}{\gamma}
+            \newcommand{\HealthParam}{\beta}
+            \newcommand{\LatentParam}{\alpha}
+            \newcommand{\HealthShock}{\epsilon}
+            \newcommand{\ReportShock}{\eta}
+            \newcommand{\Data}{X}
+            \newcommand{\ParamVec}{\Delta}
+            \newcommand{\LivPrb}{\Omega}
+            \newcommand{\CumLivPrb}{\omega}
+            \newcommand{\TransPrb}{\Xi}
+            \newcommand{\HealthDstn}{\Lambda}
+            \newcommand{\ReportPrb}{\Psi}
+            \newcommand{\HealthDstnPcvd}{\widetilde{\Lambda}}
+            \newcommand{\LL}{\pi}
+            
+            \newcommand{\RootDir}{..}
+            \newcommand{\FigsDir}{\RootDir/Figures}
+            \newcommand{\TablesDir}{\RootDir/Tables}
+						
+\begin{document}
+
+\setcounter{table}{3}
+
+\setcounter{figure}{9}
+
+\appendix
+
+\section*{Online Appendix}
+
+Appendix~\ref{app:LitQuotes} expands on the discussion in Section~\ref{sec:StructuralSRHS} to provide more detailed references to how SRHS has been used to estimate or calibrate health dynamics in structural models. Appendix~\ref{app:MoreSpecs} presents additional specifications of the latent health model, including on the HRS, PSID, and MEPS data independently as well as a simplified model that drops two key features. Appendix~\ref{app:MoreFigs} provides many more figures related to those in the main paper, but were excluded for length and space considerations.
+
+
+\section{Prior Structural Work Using SRHS}\label{app:LitQuotes}
+
+This appendix provides a review of papers with a dynamic structural model that includes individual health as a state variable.  Its sole intent is to demonstrate that the ``simple dynamics'' of health described in Section \ref{sec:Intro} are employed nearly universally, often without much elaboration or justification; relevant quotations are offered when possible.  Most of these works were published in the past decade or so, with some exceptions.
+
+The first known (to me) dynamic structural model to include health as a state variable is found in \cite{RustPhelan97}, who use data from the Retirement History Survey, the precursor to the HRS, to explore how Social Security and Medicare rules motivate retirement behavior in an incomplete markets model.  They model the health state of a living individual as binary, with bad health indicated by answering affirmatively to either of, ``Do you have a health condition, physical handicap, or disability that limits how well you get around?'' or, ``Does your health limit the kind or amount of work or housework you can do?'' (p799-800).  The authors segregate ``the Markov transition matrix...\ representing individuals' \textit{one step ahead} beliefs'' into five components, one for each discrete state dimension.  These are each estimated separately in the first stage of their structural estimation; specifically, ``The marital status, health status, and mortality probabilities...\ were specified as binary logit probabilities and estimated via maximum likelihood.''  Although not stated directly, these quotes seem to imply that the estimation was conducted using only one-period transitions.
+
+Two papers by the same coauthor team use HRS data to estimate transition probabilities of a binary health state.  \cite{BlauGilleskie06} estimate a structural model of joint decision-making by older married couples in which, ``[t]he transition probabilities are specified as first-order Markov logit processes.'' (p940)  In an early example of the now-standard approach, the authors use SRHS as the sole empirical measure of health, and combine the top three categories and bottom two categories to define their binary health state.  The authors write that, ``We take...\ health transitions from $t=$1-2, 2-3, and 3-4 as quantities to be explained by the model.  The model is estimated by maximum likelihood. The likelihood contribution is the product of [other outcome probabilities] and health transition probabilities.'' (p944)  The health process in \cite{BlauGilleskie08} is more complicated, but the same binary definition of health is used (p490).  They write, ``The health state in periods $t+1$ is determined by health in $t$, the medical care choices during period $t$, age, permanent unobserved heterogeneity, and an i.i.d.\ shock.'' (p482)  The transition probability is modeled as a logit with death as a third possible outcome, and the estimation is by maximum likelihood.  In both papers, an individual's reported health status is taken as given, so all transitions between binary states are treated as if they represent a true change in health.
+
+\cite{Khwaja10} presents another dynamic discrete choice model estimated by maximum likelihood using HRS data.  Khwaja maintains all five categories of SRHS, and allows transition probabilities to be affected by the individual's discrete decisions over smoking, drinking, exercise, and medical utilization.  He specifies a multinomial logit form, estimating coefficients for five equations that determine the probability that an individual will be in \textit{at least} poor, fair, etc health; this is chosen for its additional flexibility relative to an ordered probit or logit (p133).  As above, SRHS is treated as a true representation of health, and there is no reference to the model's ability to fit transitions more than one period ahead.
+
+Three papers by a famous research team all employ the same approach to modeling health dynamics.  \cite{French11} use HRS data to estimate transition probabilities of their binary health state (using the standard SRHS partition).  They do not specify an estimation method, but the text hints that it must be fairly simple: ``In the first step, we estimate or calibrate parameters that can be cleanly identified without explicitly using our model.  For example, we estimate mortality rates and health transitions straight from demographic data.'' (p702)  No other mention of the health process is made other than a single sentence: ``Health status and mortality both depend on previous health status interacted with an age polynomial.'' (p709)  Contemporaneous work in \cite{DeNardi10} also uses exogenous transitions between binary health states, and the authors specify that they, ``estimate the probability of death and bad health as logistic functions of a cubic in age, sex, sex interacted with age, previous health status, health status interacted with age, a quadratic in permanent income rank, and permanent income rank interacted with age.''  Later, \cite{DeNardi16} add a third discrete health state, for individuals in a nursing home; exogenous transition probabilities ``depend on previous health, sex, permanent income, and age.'' (p3492)  Like \cite{Khwaja10}, they ``estimate health transitions and mortality rates simultaneously by fitting the transitions observed in the HRS to a multinomial logit model.'' (p3497)
+
+\cite{Pashchenko13} estimate a rich structural model to analyze the welfare effects of health insurance reform measures styled after the Affordable Care Act.  They model a binary health state that is fully coincident with medical expenses: ``We categorize individuals into two groups according to their medical expenses.  Individuals with low medical expenses ($x_t \leq \bar{x}_t$ are referred to as `healthy' or `people in good health', while individuals with high medical expenses ($x_t > \bar{x}_t$) are referred to as `unhealthy' or `people in bad health'." (p385)  They specify five medical expense ``bins'' for each age, with the lower three bins corresponding to ``good'' health.  Concerning the Markov transition probabilities among the bins, they write, ``To construct the transition matrix we measure the fraction of people who move from one bin to another between two consecutive years separately for people of working age (25-64) and for retirees (older than 65).'' (p394) They thus explicitly specify using a simple frequency count on observed one-period transitions.
+
+\cite{Ferreira17} likewise investigate the effects of ACA-style reforms on consumer welfare, with a particular focus on medical cost reductions.  They model individual health as binary and ``evolving according to a first-order Markov process.'' (p131)  The standard partition of the SRHS question on the MEPS is used to define the health state.  Authors specify that they, ``estimated the transition probabilities using the logit method.  We regressed next period's health status on a constant, age, age squared, age cubic, education level, current health status, and age times current health status.''  Again, only one-period transitions are used to estimate the dynamics of health.
+
+\cite{LowPistaferri15} do not use SRHS as their health state, but instead model transitions among three levels of work limitations: none, moderate, and severe.  They construct this measure using a series of questions in the PSID that ask the respondent whether they have any condition that limits the type or amount of work they can do, then probes any positive answer for the extent (p2999).  Transition probabilities among the three health states are assumed to be Markov(1), and the authors write that, ``some parameters are estimated outside the structure of the model.  For some parameters, this is because no structure is needed: disability risk can be estimated directly from transitions between disability states because of the exogeneity assumption.''  While questions about work limitations might be subject to \textit{less} reporting error than the more ambiguous SRHS question, some observed transitions are still likely spurious, adversely affecting the model's ability to fit disability transitions more than one wave ahead.
+
+In very recently published work, \cite{Aizawa19} examines how workers sort into jobs that do or don't offer employer-sponsored health insurance, and how this is affected by an ACA-style employer mandate.  He specifies health as binary, with transition probabilities determined by a logistic function of health, age, and other current period variables (p1409).  He uses the standard partition of SRHS categories to separate the ``healthy'' from the ``unhealthy'', utilizing data from both the MEPS and the Survey of Income and Program Participation (p1423).  The model is estimated by the simulated method of moments; parameters governing health transition probabilities are identified by three kinds of moments:\footnote{All moments are also conditional on the individual's age.} ``(a) health status conditional on employment and health insurance status; (b) annual health transition conditional on health; [and] (c) annual health transition conditional on health and health insurance status.'' (p1427) In this way, only one-period SRHS transitions are used to estimate the dynamics of health, causing the model to badly match longer run transitions.
+
+In a related paper, \cite{AizawaFang20} model two-dimensional binary health, with one component observed by the econometrician and the other unobserved; authors also use the SRHS question in the MEPS and SIPP (with the standard partition) as their empirical measure of (observed) health.  The observed component of the health state follows a Markov process, with probabilities varying by demographic type and insurance status (pp7-8); the unobserved component represents permanent heterogeneity and is time invariant (p22).  Transition probabilities are estimated by maximum likelihood, accounting for the fact that observations of SRHS are annual but the model is calibrated at the triannual frequency by considering all intermediate, unobserved paths of SRHS.  However, each $t$ to $t+3$ transition is treated as an independent contribution to the likelihood function.  The estimated transition probabilities will thus distribute observed annual changes over three four-month periods, but will still overestimate the true volatility of health.
+
+I know of only two dynamic structural models of health that do \textit{not} use a discrete representation with simple dynamics.  \cite{JungTran16} take the classic Grossman health capital model seriously, modeling health as a continuous variable with stochastic depreciation.  They use the SF-12v2 physical health index in the MEPS as their empirical measure of health, mapped to a grid with 15 nodes (p142), and use frequency counts to calibrate the likelihood of health shocks of various magnitudes.  Using data from the HRS, \cite{White18} constructs a continuous measure of health by estimating an ordered probit of SRHS on a long list of specific health outcomes, then projecting fitted values onto the unit interval.  The health transition process is estimated by SMM in the main estimation step, fitting age-profiles of mean health by income group and initial health status.  Some evidence of measurement error in the constructed health index is found, but an order of magnitude smaller than estimated in this paper-- a standard deviation about one-fifth that of a one-period health shock, rather than twice as great as with SRHS.
+
+
+
+\section{Additional Specifications}\label{app:MoreSpecs}
+
+In the main paper text, I estimate the latent health model on a dataset that combines the Health and Retirement Study (HRS) and the Panel Study of Income Dynamics. The model can alternatively be estimated on each dataset separately, with substantially similar results in terms of model fit and the values of the key parameters. Parameter estimates for the HRS and PSID independently are presented on Tables~\ref{tab:HRSonlyTable} and Tables~\ref{tab:PSIDonlyTable}; some polynomial functions use fewer terms in these specifications.
+
+\input{\TablesDir/HRSonlyTable.tex}
+
+\input{\TablesDir/PSIDonlyTable.tex}
+
+\input{\TablesDir/MEPSonlyTable.tex}
+
+The model can also be estimated on data from the Medical Expenditure Panel Study (MEPS), also yielding comparable results (see Table~\ref{tab:MEPSonlyTable}). The MEPS is a short panel survey focusing on medical events and expenses incurred through them.  Respondents are interviewed every six months over a two year span, for a total of five waves; just under 90\% of individuals in the MEPS are interviewed and report their SRHS in all five waves.  A new MEPS panel begins every year, so two overlapping panels are interviewed in each data wave.  Households heads of any age can be selected for the MEPS, and the SRHS question is asked for all members of a sample household.  The dataset constructed for this paper uses Panels 1 through 20, spanning 1996 to 2016.
+
+The SRHS question for the MEPS reads: ``In general, compared to other people of your age, would you say that your health is excellent, very good, good, fair, or poor?''  Of the three surveys used for this paper, the MEPS is the only one to qualify SRHS with a reference to the individual's age, possibly yielding different results and reducing comparability with the PSID and HRS.  In addition to the standard five waves, the MEPS also mails a short self-administered questionnaire (SAQ) to all respondents a few weeks after their second and fourth wave interviews. The MEPS-SAQ includes a SRHS question that is worded nearly identically to that of the PSID and HRS.
+
+Although the latent health model can be applied to minors, the motivation of the paper is to provide a more accurate health process for dynamic structural models, which usually have agents that begin no earlier than age 18.  I thus set the age of model entry (denoted $\AgeMin$ in Section \ref{sec:Model}) at 18, ignoring any observations at younger ages.\footnote{MEPS respondents thus might ``age into'' the sample in the middle of their panel.}  The MEPS censors respondents age at 85, so I drop all individuals who report this in their first wave, as their true age cannot be known.  To match the structure of the survey, the age increment for the model is $\AgeIncr=0.5$ years.  Each respondent's age in their first observed wave is incremented by half a year if they report being older in the second wave six months later.
+
+Even with its short duration, the MEPS dataset is by far the largest constructed for this paper, both by number of individuals (about 236,000) and total observed waves (over 1.1 million).  Just under 90\% of MEPS respondents are observed in all five waves of their panel; the majority of the remainder are observed for exactly three periods (one year), possibly representing planned attrition by the survey designers.  However, because the vast majority of respondents are non-elderly and relatively healthy and are observed for only two years, fewer than 2,500 deaths are observed for men and women combined.
+
+In the main paper text, I show that the model's expectation of latent health predicts retirement behavior almost exactly as well as a more general specification with age dummies and a full interaction of SRHS over two waves.  The MEPS includes detailed and accurate medical spending data for its respondents, and thus can be used to test SRHS's ability to predict medical costs. For each MEPS respondent who appears in all five waves, I calculate $\widehat{\Health}_{it}$ and $\widehat{\Health^2}_{it}$ as the expectation of $\Health_{it}$ and $\Health^2_{it}$ respectively given their posterior distribution after observing SRHS in the first three waves.  I then regress log total medical costs between waves 3 and 5 (i.e.\ for the year after the three observations of SRHS) on a cubic of age, $\widehat{\Health}_{it}$ and $\widehat{\Health^2}_{it}$.  For the 98,455 MEPS women with positive medical costs, the $R^2$ of this regression is 0.161, very slightly higher than that reached by regressing log medical spending on a \textit{full set} of dummies for the interaction of age and SRHS in wave 3; for men (sample size of 71,084), the $R^2$ is higher at 0.235, but also slightly better than the performance of the full interaction specification.\footnote{The adjusted $R^2$ for the full interaction specification is even lower, as it includes about 335 dummies.} As with predicting retirement behavior, a parametric model based on expected latent health performs at least as well as a much more flexible model using SRHS alone.
+
+\input{\TablesDir/BasicTable.tex}
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU25to34.pdf}
+		\caption{``Unhealthy'' aged 25-34 at baseline}\label{fig:SRHSfreqU25to34basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU35to44.pdf}
+		\caption{``Unhealthy'' aged 35-44 at baseline}\label{fig:SRHSfreqU35to44basic}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU45to54.pdf}
+		\caption{``Unhealthy'' aged 45-54 at baseline}\label{fig:SRHSfreqU45to54basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU55to64.pdf}
+		\caption{``Unhealthy'' aged 55-64 at baseline}\label{fig:SRHSfreqU55to64basic}
+	\end{subfigure}
+	
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU65to74.pdf}
+		\caption{``Unhealthy'' aged 65-74 at baseline}\label{fig:SRHSfreqU65to74basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllSRHSfreqU75to84.pdf}
+		\caption{``Unhealthy'' aged 75-84 at baseline}\label{fig:SRHSfreqU75to84basic}
+	\end{subfigure}
+	\caption{Distribution of number of times reporting unhealthy SRHS by age and health over next six waves conditional on being unhealthy at baseline, data vs estimated model vs simple dynamics. Basic model version assumes standard normal latent health shocks and no reporting error heterogeneity. Basic model under-predicts the frequency of respondents who are consistently in bad health.}\label{fig:SRHSfreqUTwoStudybasic}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount25to34.pdf}
+		\caption{Ages 25-34 at baseline}\label{fig:StateCount25to34basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount35to44.pdf}
+		\caption{Ages 35-44 at baseline}\label{fig:StateCount35to44basic}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount45to54.pdf}
+		\caption{Ages 45-54 at baseline}\label{fig:StateCount45to54basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount55to64.pdf}
+		\caption{Ages 55-64 at baseline}\label{fig:StateCount55to64basic}
+	\end{subfigure}
+	
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount65to74.pdf}
+		\caption{Ages 65-74 at baseline}\label{fig:StateCount65to74basic}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23basicAllStateCount75to84.pdf}
+		\caption{Ages 75-84 at baseline}\label{fig:StateCount75to84basic}
+	\end{subfigure}
+	\caption{Distribution of number of different health categories reported over 12 years (7 consecutive waves) using a balanced panel, model vs data vs simple dynamics. Basic model version assumes standard normal latent health shocks and no reporting error heterogeneity. Basic model has too many respondents who report three different SRHS categories over seven waves, and too few who report one or two.}\label{fig:StateCountTwoStudyBasic}
+\end{figure}
+
+The model presented in the paper includes heterogeneity in the magnitude of reporting errors, as well as mixed normal latent health shocks. A reader might reasonably wonder how a more basic model with simplified assumptions would perform, stripping these features. Table~\ref{tab:BasicTable} presents results for this basic model, specifying latent health shocks as standard normal and using only one reporting type (with $\varsigma=1$). The basic model fits conditional SRHS distributions fairly well, but is very inaccurate in predicting the fraction of respondents who consistently report bad health; Figure~\ref{fig:SRHSfreqUTwoStudybasic} provides the basic model analogue to Figure~\ref{fig:SRHSfreqUTwoStudy}, showing a bad fit in the rightmost column. Moreover, simulated basic model respondents visit too many different SRHS categories as compared to the data. Compare Figure~\ref{fig:StateCountTwoStudyBasic} here to Figure~\ref{fig:StateCountTwoStudy} in the main text, and note that the basic model's distribution is closer to the ``simple dynamics'' distribution than the data itself, predicting far too few respondents who report the same SRHS for seven waves straight.
+
+
+\section{Additional Figures}\label{app:MoreFigs}
+
+There are far more figures that demonstrate the latent health model's ability to reproduce SRHS dynamics, and that the traditional simple dynamics of SRHS used in the structural literature do \textit{not}, than can reasonably included be in the main paper text. This appendix includes many additional figures that were produced but excluded from the main paper out of considerations for paper length and readability.
+
+First, Figure~\ref{fig:SRHScompare} provides a comparison of the distribution of SRHS by age and sex in the HRS and PSID, showing that the two surveys are comparable for their overlapping age range. Figure~\ref{fig:MortFitByAge} compares the estimated model's predicted mortality rate by age and sex to the observed rate in the data as well as the values from the Social Security Administration's mortality tables for 2013; the differences among the trends are often imperceptible, providing some basic validation of the dataset as a representative sample of the U.S.\ population.
+
+In the main paper, Figure~\ref{fig:NaiveTransVG} shows that the simple health dynamics used in almost all structural models do not accurately fit the empirical distribution of SRHS (conditional on reporting ``very good'' health at baseline) several waves in the future. I repeat the same exercise for all five categorical health states in Figures~\ref{fig:NaiveTransPR}-\ref{fig:NaiveTransEX}, comparing predictions from simple dynamics to the HRS and PSID data up to sixteen years ahead. Simple dynamics generate an extremely poor fit to the data.
+
+In contrast, the latent health model accurately matches the empirical distribution of SRHS (conditional on age and health in the baseline period) far into the future. Figures~\ref{fig:ModelTransPR}-\ref{fig:ModelTransEX} plot the distribution of SRHS one to eight waves ahead, comparing the estimated model's predictions to observations from the HRS and PSID. The largest differences between the model and data occur for younger respondents (under 40) initially observed in poor health, and older respondents (75+) in very good or excellent health. In each case, there are relatively few relevant observations on which to discipline the model. Note that the model fit deteriorates completely when making predictions about very old ages (95 and beyond), as there are extremely few observations at all.
+
+In the main text of the paper, Figure~\ref{fig:SRHSfreqUTwoStudy} shows that the model accurately predicts the frequency of bad health (reporting poor or fair SRHS) over the next six waves conditional on bad health at baseline. Figure~\ref{fig:SRHSfreqHTwoStudy} below shows that the model also matches the frequency distribution conditional on good health at baseline as well. However, the simple dynamics of SRHS do not generate such a bad fit as they do when starting from bad health, so the latent health model only provides a modest improvement here.
+
+Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of reporting two different SRHS categories if asked twice in the same wave. Other than younger respondents in poor or fair health (of whom there are relatively few), the model predicts a probability of changing answers that is fairly constant with respect to age and health.
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudySRHSaWomen.pdf}
+		\caption{HRS \& PSID women}\label{fig:SRHScompareWomen}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudySRHSaMen.pdf}
+		\caption{HRS \& PSID men}\label{fig:SRHScompareMen}
+	\end{subfigure}
+	\caption{Distribution of SRHS by age in the HRS and PSID data.}\label{fig:SRHScompare}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23WomenMortByAge.pdf}
+		\caption{HRS \& PSID women}\label{fig:MEPSwomenMortAge}
+	\end{subfigure}
+	~
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23MenMortByAge.pdf}
+		\caption{HRS \& PSID men}\label{fig:TwoStudyMenMortAge}
+	\end{subfigure}
+	\caption{Mortality by age, SSA table (solid) vs data (dash-dot) vs estimated model.} \label{fig:MortFitByAge}
+\end{figure}
+
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T1naiveNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Naive1AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T2naiveNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Naive2AheadPoor}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T3naiveNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Naive3AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T4naiveNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Naive4AheadPoor}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T5naiveNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Naive5AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T6naiveNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Naive6AheadPoor}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T7naiveNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Naive7AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T8naiveNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Naive8AheadPoor}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``poor'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransPR}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T1naiveNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Naive1AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T2naiveNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Naive2AheadFair}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T3naiveNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Naive3AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T4naiveNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Naive4AheadFair}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T5naiveNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Naive5AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T6naiveNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Naive6AheadFair}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T7naiveNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Naive7AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T8naiveNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Naive8AheadFair}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``fair'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransFR}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T1naiveNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Naive1AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T2naiveNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Naive2AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T3naiveNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Naive3AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T4naiveNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Naive4AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T5naiveNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Naive5AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T6naiveNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Naive6AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T7naiveNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Naive7AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T8naiveNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Naive8AheadGood}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``good'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransGD}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T1naiveNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Naive1AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T2naiveNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Naive2AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T3naiveNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Naive3AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T4naiveNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Naive4AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T5naiveNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Naive5AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T6naiveNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Naive6AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T7naiveNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Naive7AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T8naiveNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Naive8AheadVeryGood}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``very good'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransVGa}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T1naiveNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Naive1AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T2naiveNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Naive2AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T3naiveNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Naive3AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T4naiveNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Naive4AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T5naiveNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Naive5AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T6naiveNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Naive6AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T7naiveNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Naive7AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T8naiveNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Naive8AheadExcellent}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``excellent'' health in the baseline period in the PSID \& HRS data (solid) vs simple (dash-dot).}\label{fig:NaiveTransEX}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T2modelNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Model1AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T4modelNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Model2AheadPoor}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T6modelNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Model3AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T8modelNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Model4AheadPoor}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T10modelNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Model5AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T12modelNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Model6AheadPoor}
+	\end{subfigure}
+
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T14modelNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Model7AheadPoor}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T16modelNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Model8AheadPoor}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``poor'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransPR}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T2modelNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Model1AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T4modelNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Model2AheadFair}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T6modelNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Model3AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T8modelNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Model4AheadFair}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T10modelNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Model5AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T12modelNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Model6AheadFair}
+	\end{subfigure}
+
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T14modelNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Model7AheadFair}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T16modelNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Model8AheadFair}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``fair'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransFR}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T2modelNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Model1AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T4modelNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Model2AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T6modelNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Model3AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T8modelNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Model4AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T10modelNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Model5AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T12modelNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Model6AheadGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T14modelNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Model7AheadGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T16modelNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Model8AheadGood}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``good'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransGD}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T2modelNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Model1AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T4modelNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Model2AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T6modelNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Model3AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T8modelNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Model4AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T10modelNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Model5AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T12modelNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Model6AheadVeryGood}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T14modelNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Model7AheadVeryGood}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T16modelNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Model8AheadVeryGood}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``very good'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransVGa}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T2modelNoLeg.pdf}
+		\caption{One wave ahead}\label{fig:Model1AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T4modelNoLeg.pdf}
+		\caption{Two waves ahead}\label{fig:Model2AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T6modelNoLeg.pdf}
+		\caption{Three waves ahead}\label{fig:Model3AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T8modelNoLeg.pdf}
+		\caption{Four waves ahead}\label{fig:Model4AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T10modelNoLeg.pdf}
+		\caption{Five waves ahead}\label{fig:Model5AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T12modelNoLeg.pdf}
+		\caption{Six waves ahead}\label{fig:Model6AheadExcellent}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T14modelNoLeg.pdf}
+		\caption{Seven waves ahead}\label{fig:Model7AheadExcellent}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.45\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T16modelNoLeg.pdf}
+		\caption{Eight waves ahead}\label{fig:Model8AheadExcellent}
+	\end{subfigure}
+	\caption{Cumulative distribution of SRHS by age conditional on reporting ``excellent'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransEX}
+\end{figure}
+
+
+\begin{figure}
+	\centering
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH25to34.pdf}
+		\caption{``Healthy'' aged 25-34 at baseline}\label{fig:SRHSfreqH25to34}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH35to44.pdf}
+		\caption{``Healthy'' aged 35-44 at baseline}\label{fig:SRHSfreqH35to44}
+	\end{subfigure}
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH45to54.pdf}
+		\caption{``Healthy'' aged 45-54 at baseline}\label{fig:SRHSfreqH45to54}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH55to64.pdf}
+		\caption{``Healthy'' aged 55-64 at baseline}\label{fig:SRHSfreqH55to64}
+	\end{subfigure}
+	
+	
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH65to74.pdf}
+		\caption{``Healthy'' aged 65-74 at baseline}\label{fig:SRHSfreqH65to74}
+	\end{subfigure}
+	~
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllSRHSfreqH75to84.pdf}
+		\caption{``Healthy'' aged 75-84 at baseline}\label{fig:SRHSfreqH75to84}
+	\end{subfigure}
+	\caption{Distribution of number of times reporting unhealthy SRHS by age and health over next six waves conditional on being healthy at baseline, data vs estimated model vs simple dynamics. Relative to usual assumptions, the latent health model better matches the fraction of respondents who never report bad health.}\label{fig:SRHSfreqHTwoStudy}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.7]{\FigsDir/TwoStudyOver23AllChangeSRHS.pdf}
+	\caption{Predicted probability of changing SRHS if asked twice in same survey. Dashed black line represents population average.}\label{fig:ChangeSRHS}
+\end{figure}
+
+\newpage
+
+\bibliographystyle{mnwteststyle}
+\bibliography{HiddenHealth}
+
+\end{document}
+

@@ -7,6 +7,7 @@ from scipy.interpolate import interp1d
 from time import time
 from copy import copy
 from scipy.optimize import fmin
+from Optimizers import calcJacobian
 
 def getPercentiles(data,weights=None,percentiles=[0.5],presorted=False):
     '''
@@ -231,3 +232,31 @@ def calcHessian(f,x,eps=0.0001,which=None):
                 hessian[l,k] = d2f_dxidxj
                 
     return hessian
+
+
+def calcDeltaMethodStdErrs(params, covar, transformation):
+    '''
+    Calculate the standard errors of parameters Y = f(X) given the covariance matrix of X.
+
+    Parameters
+    ----------
+    params : np.array
+        A size N vector of estimated structural parameters. Econometrician wants to 
+        report estimates and standard errors of transformation. This represents X.
+    covar : np.array
+        The NxN covariance matrix for the estimated structural parameters.
+    transformation : function
+        An R^N --> R^M that maps the structural parameters X to a new parameter
+        space that the econometrician wants to report.
+
+    Returns
+    -------
+    std_errs_transformed : np.array
+        Size M array of transformed standard errors, calculated using the delta method.
+    '''
+    jacobian = calcJacobian(transformation, params)
+    covar_trans = np.dot(jacobian, np.dot(covar, np.transpose(jacobian)))
+    std_errs_transformed = np.sqrt(np.diag(covar_trans))
+    return std_errs_transformed
+    
+    

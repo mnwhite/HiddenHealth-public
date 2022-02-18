@@ -1,0 +1,96 @@
+\begin{table}
+\tiny
+\singlespace
+\begin{center}
+\caption{Paramaters Estimated by Maximum Likelihood on HRS Data}\label{tab:HRSonlyTable}
+\newsavebox{\HRSonlyTableBox}
+\sbox{\HRSonlyTableBox}{  
+\begin{tabular}{clccc}
+\hline \hline
+\rule{0pt}{2.5ex}Param & \multicolumn{1}{c}{Description} & Women & Men & All \\
+\hline
+\rule{0pt}{2.2ex}$\theta_{0}'$ & Mortality probit: level at model start $\underline{j}$ & 2.467 & 2.105 & 2.405 \\
+\rule{0pt}{2.2ex} & & (5.97e-2) & (7.75e-2) & (4.78e-2) \\
+\rule{0pt}{2.2ex}$\theta_{s}$ & Mortality probit: shifter for men & 0.00 & 0.00 & -0.222 \\
+\rule{0pt}{2.2ex} & & (---) & (---) & (1.34e-2) \\
+\rule{0pt}{2.2ex}$\theta_{h1}'$ & Mortality probit: first derivative w.r.t health at $\Health=0$ & 0.125 & 0.191 & 0.156 \\
+\rule{0pt}{2.2ex} & & (7.00e-3) & (2.14e-2) & (1.07e-2) \\
+\rule{0pt}{2.2ex}$\theta_{h2}'$ & Mortality probit: second derivative w.r.t health at $\Health=0$ & -6.40e-3 & -1.46e-3 & -7.36e-3 \\
+\rule{0pt}{2.2ex} & & (1.32e-3) & (3.76e-3) & (1.07e-3) \\
+\rule{0pt}{2.2ex}$\theta_{j1}'$ & Mortality probit: first derivative w.r.t age at $\underline{j}$ & -5.78e-2 & -4.75e-2 & -5.18e-2 \\
+\rule{0pt}{2.2ex} & & (7.95e-3) & (1.17e-2) & (6.26e-3) \\
+\rule{0pt}{2.2ex}$\theta_{j2}'$ & Mortality probit: second derivative w.r.t age at $\underline{j}$ & 2.70e-3 & 2.15e-3 & 2.30e-3 \\
+\rule{0pt}{2.2ex} & & (6.57e-4) & (1.03e-3) & (5.18e-4) \\
+\rule{0pt}{2.2ex}$\theta_{j3}'$ & Mortality probit: third derivative w.r.t age at $\underline{j}$ & -1.48e-4 & -1.32e-4 & -1.35e-4 \\
+\rule{0pt}{2.2ex} & & (2.50e-5) & (4.06e-5) & (1.99e-5) \\
+\rule{0pt}{2.2ex}$\theta_{hj}$ & Mortality probit: coefficient on age$\times$health & -3.03e-5 & -7.14e-4 & -3.16e-4 \\
+\rule{0pt}{2.2ex} & & (2.13e-5) & (2.50e-4) & (1.18e-4) \\
+\rule{0pt}{2.2ex}$\theta_{js}$ & Mortality probit: coefficient on age, adjustment for men & 0.00 & 0.00 & 2.63e-4 \\
+\rule{0pt}{2.2ex} & & (---) & (---) & (6.58e-5) \\
+\hline
+\rule{0pt}{2.2ex}$\gamma_{0}'$ & Correlation factor: level at model start $\underline{j}$ & 3.669 & 3.346 & 3.541 \\
+\rule{0pt}{2.2ex} & & (6.78e-2) & (0.102) & (5.93e-2) \\
+\rule{0pt}{2.2ex}$\gamma_{j1}'$ & Correlation factor: first derivative w.r.t age at $\underline{j}$ & 5.42e-3 & 2.96e-2 & 1.48e-2 \\
+\rule{0pt}{2.2ex} & & (3.44e-3) & (5.98e-3) & (3.38e-3) \\
+\hline
+\rule{0pt}{2.2ex}$\beta_{0}'$ & Expected health: level at model start $\underline{j}$ & 1.248 & 2.432 & 1.886 \\
+\rule{0pt}{2.2ex} & & (0.804) & (0.660) & (0.474) \\
+\rule{0pt}{2.2ex}$\beta_{s}$ & Expected health: shifter for men & 0.00 & 0.00 & -0.428 \\
+\rule{0pt}{2.2ex} & & (---) & (---) & (0.179) \\
+\rule{0pt}{2.2ex}$\beta_{j1}'$ & Expected health: first derivative w.r.t age at $\underline{j}$ & 0.390 & 1.92e-2 & 0.229 \\
+\rule{0pt}{2.2ex} & & (0.144) & (0.126) & (7.59e-2) \\
+\rule{0pt}{2.2ex}$\beta_{j2}'$ & Expected health: second derivative w.r.t age at $\underline{j}$ & -7.18e-2 & -3.16e-2 & -5.44e-2 \\
+\rule{0pt}{2.2ex} & & (1.56e-2) & (1.08e-2) & (8.51e-3) \\
+\rule{0pt}{2.2ex}$\beta_{j3}'$ & Expected health: third derivative w.r.t age at $\underline{j}$ & 3.15e-3 & 0.00 & 1.99e-3 \\
+\rule{0pt}{2.2ex} & & (7.10e-4) & (---) & (4.40e-4) \\
+\rule{0pt}{2.2ex}$\beta_{js}$ & Expected health: coefficient on age, adjustment for men & 0.00 & 0.00 & -1.82e-2 \\
+\rule{0pt}{2.2ex} & & (---) & (---) & (8.92e-3) \\
+\hline
+\rule{0pt}{2.2ex}$\mu_0$ & Mean of initial latent health at $\underline{j}$ & 7.859 & 7.368 & 7.597 \\
+\rule{0pt}{2.2ex} & & (0.184) & (0.247) & (0.133) \\
+\rule{0pt}{2.2ex}$\sigma_0$ & Standard deviation of initial latent health at $\underline{j}$ & 4.341 & 3.850 & 4.083 \\
+\rule{0pt}{2.2ex} & & (0.119) & (0.152) & (8.95e-2) \\
+\rule{0pt}{2.2ex}$q_1$ & Health shocks: probability of small shock & 0.956 & 0.959 & 0.959 \\
+\rule{0pt}{2.2ex} & & (7.53e-3) & (6.18e-3) & (4.47e-3) \\
+\rule{0pt}{2.2ex}$\mu_1$ & Health shocks: mean for small shock & 9.18e-2 & 9.83e-2 & 9.40e-2 \\
+\rule{0pt}{2.2ex} & & (8.07e-3) & (6.44e-3) & (4.91e-3) \\
+\rule{0pt}{2.2ex}$\sigma_1$ & Health shocks: stdev for small shock & 0.481 & 0.445 & 0.473 \\
+\rule{0pt}{2.2ex} & & (3.38e-2) & (2.96e-2) & (2.11e-2) \\
+\rule{0pt}{2.2ex}$q_2$ & Health shocks: probability of large shock & 4.36e-2 & 4.11e-2 & 4.09e-2 \\
+\rule{0pt}{2.2ex} & & (7.53e-3) & (6.18e-3) & (4.47e-3) \\
+\rule{0pt}{2.2ex}$\mu_1$ & Health shocks: mean for large shock & -2.013 & -2.291 & -2.204 \\
+\rule{0pt}{2.2ex} & & (0.239) & (0.280) & (0.180) \\
+\rule{0pt}{2.2ex}$\sigma_1$ & Health shocks: stdev for large shock & 3.690 & 3.770 & 3.761 \\
+\rule{0pt}{2.2ex} & & (0.221) & (0.184) & (0.139) \\
+\hline
+\rule{0pt}{2.2ex}$p_1$ & Proportion of reporting type 1 individuals & 0.474 & 0.494 & 0.456 \\
+\rule{0pt}{2.2ex} & & (1.76e-2) & (2.99e-2) & (5.94e-3) \\
+\rule{0pt}{2.2ex}$\varsigma_1$ & Standard deviation of SRHS shocks for type 1 & 1.059 & 0.505 & 1.105 \\
+\rule{0pt}{2.2ex} & & (3.99e-2) & (1.88e-2) & (1.99e-2) \\
+\rule{0pt}{2.2ex}$p_2$ & Proportion of reporting type 2 individuals & 0.430 & 0.440 & 0.470 \\
+\rule{0pt}{2.2ex} & & (2.72e-2) & (2.26e-2) & (6.85e-3) \\
+\rule{0pt}{2.2ex}$\varsigma_2$ & Standard deviation of SRHS shocks for type 2 & 0.485 & 1.127 & 0.499 \\
+\rule{0pt}{2.2ex} & & (1.71e-2) & (4.07e-2) & (7.17e-3) \\
+\rule{0pt}{2.2ex}$p_3$ & Proportion of reporting type 3 individuals & 9.64e-2 & 6.55e-2 & 7.43e-2 \\
+\rule{0pt}{2.2ex} & & (2.26e-2) & (1.57e-2) & (1.24e-2) \\
+\rule{0pt}{2.2ex}$\varsigma_3$ & Standard deviation of SRHS shocks for type 3 & 1.951 & 2.193 & 2.099 \\
+\rule{0pt}{2.2ex} & & (0.104) & (0.135) & (8.80e-2) \\
+\hline
+\rule{0pt}{2.2ex}$\alpha_1$ & SRHS: Linear coefficient on latent health & 0.463 & 0.481 & 0.472 \\
+\rule{0pt}{2.2ex} & & (1.18e-2) & (1.51e-2) & (9.27e-3) \\
+\rule{0pt}{2.2ex}$\chi_2$ & SRHS: Cut b/w reporting ``fair'' and ``good'' & 1.780 & 1.740 & 1.757 \\
+\rule{0pt}{2.2ex} & & (2.26e-2) & (2.79e-2) & (1.78e-2) \\
+\rule{0pt}{2.2ex}$\chi_3$ & SRHS: Cut b/w reporting ``good'' and ``very good'' & 3.488 & 3.377 & 3.430 \\
+\rule{0pt}{2.2ex} & & (3.42e-2) & (4.24e-2) & (2.73e-2) \\
+\rule{0pt}{2.2ex}$\chi_4$ & SRHS: Cut b/w reporting ``very good'' and ``excellent'' & 5.511 & 5.213 & 5.362 \\
+\rule{0pt}{2.2ex} & & (4.94e-2) & (6.05e-2) & (3.94e-2) \\
+\hline
+\rule{0pt}{2.2ex}$I$ & Number of unique individuals & 20,108 & 16,094 & 36,202\\
+\rule{0pt}{2.2ex}$\lVert X \rVert$ & Number of observations of SRHS (alive \& dead) & 113,336 & 86,377 & 199,713\\
+\rule{0pt}{2.2ex}$\mathcal{L}(\widehat{\Delta} | X)$ & Log likelihood at estimated parameters & 129,106.9 & 112,893.6 & 242,062.4\\
+\hline\hline
+\end{tabular}
+ } 
+\usebox{\HRSonlyTableBox}  
+\end{center}
+\end{table}
