@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import opencl4py as cl
 from Utilities import getPercentiles, drawDiscrete, calcHessian, calcDeltaMethodStdErrs
 from Optimizers import minimizeBFGS
-from MakeTables import saveTableParamsAndStdErrs, saveParamsAndCovarMatrix,readParamsAndCovarMatrix
+from MakeTables import saveTableParamsAndStdErrs, saveParamsAndCovarMatrix, readParamsAndCovarMatrix
 from ChangeCoefficients import changeTaylorToPoly, convertOldToNewParams
 import EvalCount
 
@@ -998,11 +998,11 @@ def LLfunction(param_vec, return_ind_LL=False):
     
     # Sum across all individuals (and print result to screen)
     negLL = -np.dot(LLvec_out, weight_data)
-    print(negLL)
+    #print(negLL)
     
     # Write progress to file every so often
     EvalCount.eval_count += 1
-    if np.mod(EvalCount.eval_count,10) == 0:
+    if np.mod(EvalCount.eval_count, 10) == 0:
         writeParamsToFile(param_vec,'EstimationProgress.txt')
     
     # Return output in the format requested
@@ -1015,49 +1015,49 @@ def LLfunction(param_vec, return_ind_LL=False):
 
 def makeFigures(param_vec, save_bool):
     '''
-    Make various figures fromthe model and data.
+    Make various figures from the model and data.
     '''
     my_dict = makeParameterDict(param_vec)
     LivPrbArray, TransPrbArray, ReportPrbArray, HealthInitDstn = makeProbArrays(**my_dict)
     
     # # Overall data vs model vs SSA mortality plots
-    # makeMortFigure(LivPrbArray,HealthInitDstn,False,save_bool)
+    #makeMortFigure(LivPrbArray,HealthInitDstn,False,save_bool)
     
     # # Mortality by health and age plots
     # makeMortByHealthFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
     
-    #Health distribution by age plots
-    # makeReportFigure(ReportPrbArray,HealthInitDstn,True,False,save_bool)
+    # # Health distribution by age plots
+    # makeReportFigure(ReportPrbArray,HealthInitDstn,True,True,False,save_bool)
     
-    # T-ahead health transition plots
-    #for h in range(1,h_count+1):
-    #    makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,h,16,'model',False,save_bool)
-    #for t in range(2,21,2):
-    #  makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,5,t,'model',False,save_bool)
+    # # T-ahead health transition plots
+    # h_set = [1,2,3,4,5]
+    # T_set = [2,4,6,8,10,12,14,16,18,20]
+    # compare = 'naive'
+    # for h in h_set:
+    #     for T in T_set:
+    #         makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,h,T,compare,False,save_bool)
     
     # # Latent health shock distribution plot
-    #makeHealthShockDstnFigure(my_dict['HealthShockAvgs'],my_dict['HealthShockStds'],my_dict['HealthShockPrbs'],save_bool)
+    # makeHealthShockDstnFigure(my_dict['HealthShockAvgs'],my_dict['HealthShockStds'],my_dict['HealthShockPrbs'],save_bool)
     
     # # Probability of changing answer plot
     # makeChangeAnswerFigure(LivPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
     
     # # Duration dependence figures
-    makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,4,save_bool)
+    # makeDurationDependenceFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,4,save_bool)
     # makeMortDurDepFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,save_bool)
     
-    # # Make frequency of future unhealthy periods figures
-    # age_lo = [25,35,45,55,65,75]
-    # age_hi = [34,44,54,64,74,84]
-    # #age_lo = [55,65,75]
-    # #age_hi = [64,74,84]
-    # for i in range(len(age_lo)):
-    #     makeStateCountFigures(param_vec, sex_list, age_lo[i], age_hi[i], 6, save_bool)
+    # Make frequency of future unhealthy periods figures
+    age_lo = [25,35,45,55,65,75]
+    age_hi = [34,44,54,64,74,84]
+    for i in range(len(age_lo)):
+        makeStateCountFigures(param_vec, sex_list, age_lo[i], age_hi[i], 6, save_bool)
     
     # # Make latent health distribution by age figures
     # makeHealthDstnByAgeFigure(HealthInitDstn,save_bool)
     
-    # # Make health correlation by age figure
-    # makeCorrFigure(my_dict['Corr0'],my_dict['CorrAge1'],my_dict['CorrAge2'],my_dict['CorrAge3'],my_dict['CorrAge4'], True, save_bool)
+    # Make health correlation by age figure
+    #makeCorrFigure(my_dict['Corr0'],my_dict['CorrAge1'],my_dict['CorrAge2'],my_dict['CorrAge3'],my_dict['CorrAge4'], True, save_bool)
     
     # # Make same SRHS in every wave figure
     # makeConstantSRHSfigure(param_vec, save_bool)
@@ -1082,12 +1082,10 @@ def makeFigures(param_vec, save_bool):
     # makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,s,j,h,0,already_done,0,x_count*4+1, use_orig=True, pdf_bool=True)
     
     # # Make demonstration of mortality
-    # for f in range(4):
-    #     makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,0,72,f)
+    #makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,0,62)
     
-    # # Make demonstration of observing SRHS
-    # for f in range(4):
-    #     makeReportDemoFigure(ReportPrbArray,HealthInitDstn,0,30,2,f)
+    # Make demonstration of observing SRHS
+    #makeReportDemoFigure(ReportPrbArray,HealthInitDstn,0,27,2,3)
     
 
 def makeMortFigure(LivPrbArray, HealthInitDstn, show_legend, save_fig):
@@ -1201,7 +1199,7 @@ def makeMortFigure(LivPrbArray, HealthInitDstn, show_legend, save_fig):
             print('Saved figure to ' + filename)
     
     
-def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save_fig):
+def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, show_legend, save_data, save_fig):
     '''
     Make a figure plotting simulated and actual reported health status.
     
@@ -1215,6 +1213,8 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         of continuous health x at age j and sex s.
     add_labels : bool
         Indicator for whether to add text labels for SRHS areas.
+    show_legend : bool
+        Indicator for whether to add a legend to the figure.
     save_data : bool
         Indicator for whether the calculated data series should be saved to a
         tab-delimited text file.
@@ -1253,21 +1253,25 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
     HealthStatus_data = np.cumsum(HealthStatus_data,axis=2)
     HealthStatus_model = np.cumsum(HealthStatus_model,axis=2)
     HealthStatus_data_plus = np.concatenate((np.zeros((2,age_count_B,1)),HealthStatus_data),axis=2)
-    
-    print(HealthStatus_model[0,:,2])
-    print(HealthStatus_model[1,:,2])
             
     colors = ['b','r','g','m','c'] # Need to make this longer if h_count > 5
+    health_words = ['poor', 'fair', 'good', 'very good', 'excellent']
     
     if 0 in sex_list:
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[0,:,h],'-'+colors[h])
+        for h in range(h_count):
             plt.plot(age_vec,HealthStatus_model[0,:,h],'--'+colors[h])
         plt.ylim([-0.001,1.005])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, women in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        if show_legend:
+            plt.legend(health_words[:-1], loc=9, bbox_to_anchor=(0.5,-0.15), ncol=len(health_words)-1)
+            plt.gcf().set_size_inches(6.25,4.5)
+        else:
+            plt.gcf().set_size_inches(6.25,4)
         plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'WomenSRHSbyAge.pdf'
@@ -1279,12 +1283,18 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
     if 1 in sex_list:
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[1,:,h],'-'+colors[h])
+        for h in range(h_count):
             plt.plot(age_vec,HealthStatus_model[1,:,h],'--'+colors[h])
         plt.ylim([-0.01,1.005])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, men in ' + source_name)
         plt.xlabel('Age')
         plt.ylabel('Cumulative SRHS share')
+        if show_legend:
+            plt.legend(health_words[:-1], loc=9, bbox_to_anchor=(0.5,-0.15), ncol=len(health_words)-1)
+            plt.gcf().set_size_inches(6.25,4.5)
+        else:
+            plt.gcf().set_size_inches(6.25,4)
         plt.tight_layout()
         if save_fig:
             filename = '../Figures/' + figure_label + 'MenSRHSbyAge.pdf'
@@ -1297,11 +1307,11 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[0,:,h],'-'+colors[h])
         if add_labels:
-            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.03, 'Poor', ha='center', va='center', fontsize=14)
-            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.12, 'Fair', ha='center', va='center', fontsize=14)
-            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.3, 'Good', ha='center', va='center', fontsize=14)
-            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.55, 'Very good', ha='center', va='center', fontsize=14)
-            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.85, 'Excellent', ha='center', va='center', fontsize=14)
+            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.06, 'Poor', ha='center', va='center', fontsize=14)
+            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.18, 'Fair', ha='center', va='center', fontsize=14)
+            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.35, 'Good', ha='center', va='center', fontsize=14)
+            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.61, 'Very good', ha='center', va='center', fontsize=14)
+            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.90, 'Excellent', ha='center', va='center', fontsize=14)
         plt.ylim([-0.001,1.001])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, women in ' + source_name)
@@ -1319,11 +1329,11 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         for h in range(h_count):
             plt.plot(age_vec,HealthStatus_data[1,:,h],'-'+colors[h])
         if add_labels:
-            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.03, 'Poor', ha='center', va='center', fontsize=14)
-            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.12, 'Fair', ha='center', va='center', fontsize=14)
-            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.3, 'Good', ha='center', va='center', fontsize=14)
-            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.55, 'Very good', ha='center', va='center', fontsize=14)
-            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.85, 'Excellent', ha='center', va='center', fontsize=14)
+            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.06, 'Poor', ha='center', va='center', fontsize=14)
+            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.18, 'Fair', ha='center', va='center', fontsize=14)
+            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.35, 'Good', ha='center', va='center', fontsize=14)
+            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.61, 'Very good', ha='center', va='center', fontsize=14)
+            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.90, 'Excellent', ha='center', va='center', fontsize=14)
         plt.ylim([-0.001,1.001])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, men in ' + source_name)
@@ -1341,11 +1351,11 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
         for h in range(h_count):
             plt.fill_between(age_vec,HealthStatus_data_plus[0,:,h+1],y2=HealthStatus_data_plus[0,:,h],color=colors[h])
         if add_labels:
-            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.03, 'Poor', ha='center', va='center', fontsize=14, color='w')
-            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.12, 'Fair', ha='center', va='center', fontsize=14, color='w')
-            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.3, 'Good', ha='center', va='center', fontsize=14, color='w')
-            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.55, 'Very good', ha='center', va='center', fontsize=14, color='w')
-            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.85, 'Excellent', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.06, 'Poor', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.18, 'Fair', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.35, 'Good', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.61, 'Very good', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.90, 'Excellent', ha='center', va='center', fontsize=14, color='w')
         plt.ylim([-0.001,1.001])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, women in ' + source_name)
@@ -1362,6 +1372,12 @@ def makeReportFigure(ReportPrbArray, HealthInitDstn, add_labels, save_data, save
     if 1 in sex_list:
         for h in range(h_count):
             plt.fill_between(age_vec,HealthStatus_data_plus[1,:,h+1],y2=HealthStatus_data_plus[1,:,h],color=colors[h])
+        if add_labels:
+            plt.text(0.9*np.max(age_vec)+0.1*np.min(age_vec), 0.06, 'Poor', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.7*np.max(age_vec)+0.3*np.min(age_vec), 0.18, 'Fair', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.55*np.max(age_vec)+0.45*np.min(age_vec), 0.35, 'Good', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.35*np.max(age_vec)+0.65*np.min(age_vec), 0.61, 'Very good', ha='center', va='center', fontsize=14, color='w')
+            plt.text(0.2*np.max(age_vec)+0.8*np.min(age_vec), 0.90, 'Excellent', ha='center', va='center', fontsize=14, color='w')
         plt.ylim([-0.001,1.001])
         plt.xlim(np.min(age_vec),np.max(age_vec))
         plt.title('Self reported health status by age, men in ' + source_name)
@@ -1421,6 +1437,8 @@ def makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
     which : str
         Indicator for whether to show model or naive probabilities vs data. Can
         be 'model', 'naive', or 'both'.
+    show_legend : bool
+        Indicator for whether to add a legend to the figure.
     save_fig : bool
         Indicator for whether the figure should be saved to /Figures.
         Filename will be constructed automatically.
@@ -1446,14 +1464,18 @@ def makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
     FutureHealthDstn_data = np.zeros((age_count_B,h_count))
     
     if show_naive: # Use naive probabilities straight from the data
-        LivPrbNaiveArray, TransPrbNaiveArray, HealthInitDstnNaive = calcNaiveTransProbs()
+        LivPrbNaiveArray, TransPrbNaiveArray, HealthInitDstnNaive = calcSimpleTransProbs()
         
         for j in range(age_count_B):
             HealthDstnNow = np.zeros((2,h_count))
             for s in sex_list:
                 HealthDstnNow[s,hNow-1] = 1.0 # HealthInitDstnNaive[:,j,hNow-1]
-            for t in range(T_ahead):
+            Z_ahead = T_ahead // wave_length
+            if Z_ahead != T_ahead/wave_length:
+                print('Can only make simple projections that are integer number of waves ahead!')
+            for z in range(Z_ahead):
                 for s in sex_list:
+                    t = z*wave_length
                     HealthDstnNow[s,:] *= LivPrbNaiveArray[s,j+t,:]
                     HealthDstnNow[s,:] = np.dot(TransPrbNaiveArray[s,j+t,:,:].transpose(),HealthDstnNow[s,:])
             FutureHealthDstn_naive[j,:] = np.sum(HealthDstnNow,axis=0)/np.sum(HealthDstnNow)
@@ -1530,8 +1552,7 @@ def makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
     label_list = []
     for h in range(h_count):
         plt.plot(age_vec,CumHealthDstn_data[:,h],'-'+colors[h])
-        if h == 0:
-            label_list.append(source_name + ' data')
+    for h in range(h_count):
         if show_model:
             plt.plot(age_vec,CumHealthDstn_model[:,h],'--'+colors[h])
             if h == 0:
@@ -1546,11 +1567,13 @@ def makeTransFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInitDstn,
     plt.ylabel('Cumulative SRHS share in "after" period')
     plt.title('SRHS' + future_text + ' after saying "' + h_word + '", ' + who_text)
     if show_legend:
-        plt.legend(label_list, loc=9, bbox_to_anchor=(0.5,-0.15), ncol=len(label_list))
+        plt.legend(health_words[:-1], loc=9, bbox_to_anchor=(0.5,-0.15), ncol=len(health_words)-1)
         legend_text = ''
-        plt.tight_layout(pad=2.5)
+        plt.gcf().set_size_inches(6.25,4.5)
+        plt.tight_layout()
     else:
         legend_text = 'NoLeg'
+        plt.gcf().set_size_inches(6.25,4)
         plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_word + 'TransH' + str(hNow) + 'T' + str(T_ahead) + which + legend_text + '.pdf'
@@ -2503,7 +2526,7 @@ def makeStateCountFigures(param_vec, sex, age_bot, age_top, T_ahead, save_fig):
         right_sex = sex_data == s
         for age in age_vec:
             # Make simulated data and a population weight for this age
-            srhs_naive = makeNaiveSRHSdata(s, age, T_ahead+1, AgentCount)
+            srhs_naive = makeSimpleSRHSdata(s, age, T_ahead+1, AgentCount)
             srhs_temp = srhs_naive.copy() # Don't need to adjust
             those = np.logical_and(age_data == age, right_sex)
             weight_temp = np.dot(those, weight_data) # Sum of all weights in data for this age
@@ -2554,11 +2577,11 @@ def makeStateCountFigures(param_vec, sex, age_bot, age_top, T_ahead, save_fig):
         plt.fill([t-0.14,t+0.14,t+0.14,t-0.14], [0.,0.,y,y], color='b')
         plt.fill([t+0.40,t+0.15,t+0.15,t+0.4], [0.,0.,z,z], color='g')
     plt.xlim(-0.5, T_ahead+0.5)
-    plt.ylim(0., 0.85)
+    plt.ylim(0., 0.4)
     plt.xlabel('Number of subsequent waves reporting "unhealthy"')
     plt.ylabel('Fraction of respondents')
     plt.title(sex_word + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name + ' who report being "unhealthy"')
-    plt.legend(['Simple','Data','Model'])
+    plt.legend(['Simple','Data','Model'], loc=1, ncol=3)
     plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_alt + 'SRHSfreqU' + str(age_bot) + 'to' + str(age_top) + '.pdf'
@@ -2580,7 +2603,7 @@ def makeStateCountFigures(param_vec, sex, age_bot, age_top, T_ahead, save_fig):
     plt.xlabel('Number of subsequent waves reporting "unhealthy"')
     plt.ylabel('Fraction of respondents')
     plt.title(sex_word + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name + ' who report being "healthy"')
-    plt.legend(['Simple','Data','Model'])
+    plt.legend(['Simple','Data','Model'], loc=1, ncol=3)
     plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_alt + 'SRHSfreqH' + str(age_bot) + 'to' + str(age_top) + '.pdf'
@@ -2603,7 +2626,7 @@ def makeStateCountFigures(param_vec, sex, age_bot, age_top, T_ahead, save_fig):
         plt.fill([t-0.14,t+0.14,t+0.14,t-0.14], [0.,0.,y,y], color='b')
         plt.fill([t+0.40,t+0.15,t+0.15,t+0.4], [0.,0.,z,z], color='g')
     plt.title('SRHS categories attained, ' + sex_word_lower + ' ' + str(age_bot) + '-' + str(age_top) + ' in ' + source_name)
-    plt.legend(['Simple','Data','Model'])
+    plt.legend(['Simple','Data','Model'], loc=1, ncol=3)
     plt.tight_layout()
     if save_fig:
         filename = '../Figures/' + figure_label + sex_alt + 'StateCount' + str(age_bot) + 'to' + str(age_top) + '.pdf'
@@ -2817,7 +2840,7 @@ def makeSimulatedSRHSdata(param_vec, sex, age_0, T_sim, N_agents):
     return srhs_sim
     
 
-def calcNaiveTransProbs():
+def calcSimpleTransProbs():
     '''
     Calculate one period transition probabilities directly from the data.
     
@@ -2875,9 +2898,9 @@ def calcNaiveTransProbs():
     return LivPrbNaiveArray, TransPrbNaiveArray, HealthInitDstnNaive
 
 
-def makeNaiveSRHSdata(sex, age_0, T_sim, N_agents):
+def makeSimpleSRHSdata(sex, age_0, T_sim, N_agents):
     '''
-    Make simulated SRHS data using simple/naive transition probabilities.  Agents
+    Make simulated SRHS data using simple transition probabilities.  Agents
     all have same sex and start at same age and are simulated for T_sim periods.
     
     Parameters
@@ -2906,7 +2929,7 @@ def makeNaiveSRHSdata(sex, age_0, T_sim, N_agents):
         return int(np.floor((2**32-1)*RNG.rand()))
     
     # Calculate transition and initial probabilities
-    LivPrbArray, TransPrbArray, HealthInitDstn = calcNaiveTransProbs()
+    LivPrbArray, TransPrbArray, HealthInitDstn = calcSimpleTransProbs()
     
     # Draw initial latent health states for the agents
     s = sex
@@ -3062,7 +3085,7 @@ def makeTransitionDemoFigure(LivPrbArray,TransPrbArray,ReportPrbArray,HealthInit
     print('Saved figure to ' + filename)
     
     
-def makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,s,j,frame):
+def makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,s,j):
     '''
     Make a figure showing how mortality affects the distribution of health.
     
@@ -3077,63 +3100,85 @@ def makeMortalityDemoFigure(LivPrbArray,HealthInitDstn,s,j,frame):
         Index of sex to plot (0 women, 1 men).
     j : int
         Index of age to plot.
-    frame : int
-        Index of the animation "frame"
     '''
-    xVec0 = HealthInitDstn[s,j,:]
-    LivPrb = LivPrbArray[s,j,:]
+    bot = 0
+    top = x_count_cond
+    xVec0 = HealthInitDstn[s,j,bot:top]
+    xVec0 /= np.sum(xVec0)
+    LivPrb = LivPrbArray[s,j,bot:top]
     xVec1 = xVec0*LivPrb
     xVec2 = xVec1/np.sum(xVec1)
     AgeNow = int(age_min + j*age_incr)
+    x_lo = -10
+    x_hi = 22
     
-    # Plot survival probability
-    plt.subplot(2,1,1)
-    for i in range(x_count):
-        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
-        my_y = [0., LivPrb[i], LivPrb[i], 0.]
-        plt.fill(my_x, my_y, 'b')
-    plt.xlim(x_min,x_max)
-    plt.ylim(0.,1.)
-    plt.ylabel('Survival probability')
+    if s == 0:
+        sex_word = 'woman'
+    elif s == 1:
+        sex_word = 'man'
+    else:
+        print('Invalid sex!')
     
-    # Plot distribution of latent health
-    plt.subplot(2,1,2)
-    for i in range(x_count):
+    plt.gcf().set_size_inches(6,7.5)
+    plt.subplots(4,1, figsize=(6,7.5))
+    plt.subplots_adjust(top=0.97, bottom=0.06, right=0.97)
+    
+    # Plot prior latent health distribution
+    plt.subplot(4,1,1)
+    plt.title('Accounting for mortality in latent health: ' + sex_word + ' at age ' + str(AgeNow))
+    for i in range(x_count_cond):
         my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
-        if frame == 0:
-            top = xVec0[i]
-        elif frame < 3:
-            top = xVec1[i]
-        else:
-            top = xVec2[i]
+        top = xVec0[i]
         my_y = [0., top, top, 0.]
         plt.fill(my_x, my_y, 'r')
-        if frame == 1:
-            bot = top
-            top = top = xVec0[i]
-            my_y = [bot, top, top, bot]
-            plt.fill(my_x, my_y, 'k')
-    plt.xlim(x_min,x_max)
+    plt.xlim(x_lo,x_hi)
     plt.ylim(0.,1.05*np.max(xVec0))
-    plt.xlabel('Latent health index')
-    plt.ylabel('Probability mass')
+    plt.ylabel(r'Prior $g_k(h)$')
     
-    if frame == 0:
-        plt.suptitle('Latent health: distribution at age ' + str(AgeNow))
-    elif frame == 1:
-        plt.suptitle('Latent health: who dies at age ' + str(AgeNow))
-    elif frame == 2:
-        plt.suptitle('Latent health: after mortality at age ' + str(AgeNow))
-    elif frame == 3:
-        plt.suptitle('Latent health: survival adjustment at age ' + str(AgeNow))
+    # Plot death probability
+    plt.subplot(4,1,2)
+    for i in range(x_count_cond):
+        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
+        my_y = [0., 1.-LivPrb[i], 1.-LivPrb[i], 0.]
+        plt.fill(my_x, my_y, 'b')
+    plt.xlim(x_lo,x_hi)
+    plt.ylim(0.,1.)
+    plt.ylabel(r'Prob($x_{t+1}=0~|~ h$)')
     
-    filename = '../Figures/MortalityDemo' + str(frame) + '.pdf'
+    # Plot who dies
+    plt.subplot(4,1,3)
+    for i in range(x_count_cond):
+        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
+        top = xVec1[i]
+        my_y = [0., top, top, 0.]
+        plt.fill(my_x, my_y, 'silver')
+        bot = top
+        top = xVec0[i]
+        my_y = [bot, top, top, bot]
+        plt.fill(my_x, my_y, 'm')
+    plt.xlim(x_lo,x_hi)
+    plt.ylim(0.,1.05*np.max(xVec0))
+    plt.ylabel(r'$g_k(h) \times $Prob($x_{t+1}=0$)')
+    
+    # Plot posterior latent health distribution
+    plt.subplot(4,1,4)
+    for i in range(x_count_cond):
+        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
+        top = xVec0[i]
+        my_y = [0., top, top, 0.]
+        plt.fill(my_x, my_y, 'firebrick')
+    plt.xlim(x_lo,x_hi)
+    plt.ylim(0.,1.05*np.max(xVec2))
+    plt.ylabel(r'Posterior $g_k(h)$')
+    plt.xlabel(r'Latent health index $h$')
+    
+    filename = '../Figures/MortalityDemo.pdf'
     plt.savefig(filename)
     plt.show()
     print('Saved figure to ' + filename)
     
     
-def makeReportDemoFigure(ReportPrbArray,HealthInitDstn,s,j,h,frame):
+def makeReportDemoFigure(ReportPrbArray,HealthInitDstn,s,j,k,h):
     '''
     Make a figure showing how observing SRHS affects the distribution of health.
     
@@ -3149,61 +3194,88 @@ def makeReportDemoFigure(ReportPrbArray,HealthInitDstn,s,j,h,frame):
         Index of sex to plot (0 women, 1 men).
     j : int
         Index of age to plot.
+    k : int
+        Index of reporting type to plot.
     h : int
         Observed categorical health status, from 1 to 5.
-    frame : int
-        Index of the animation "frame"
     '''
-    xVec0 = HealthInitDstn[s,j,:]
-    ReportPrb = ReportPrbArray[h-1,:]
+    bot = k*x_count_cond
+    top = (k+1)*x_count_cond
+    xVec0 = HealthInitDstn[s,j,bot:top]
+    xVec0 /= np.sum(xVec0)
+    ReportPrb = ReportPrbArray[h-1,bot:top]
     xVec1 = xVec0*ReportPrb
     xVec2 = xVec1/np.sum(xVec1)
     AgeNow = int(age_min + j*age_incr)
+    x_lo = -6
+    x_hi = 20
+    
+    if s == 0:
+        sex_word = 'woman'
+    elif s == 1:
+        sex_word = 'man'
+    else:
+        print('Invalid sex!')
+    health_word_list = ['poor', 'fair', 'good', 'very good', 'excellent']
+    health_word = health_word_list[h-1]
+    
+    plt.gcf().set_size_inches(6,7)
+    plt.subplots(4,1, figsize=(6,7))
+    plt.subplots_adjust(top=0.97, bottom=0.06, right=0.97)
+    
+    # Plot prior distribution of latent health
+    plt.subplot(4,1,1)
+    plt.title('Latent health status: ' + sex_word + ' at age ' + str(AgeNow) + ' reporting ' + health_word + ' health')
+    for i in range(x_count_cond):
+        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
+        top = xVec0[i]
+        my_y = [0., top, top, 0.]
+        plt.fill(my_x, my_y, 'r')
+    plt.ylabel(r'Prior $g_k(h)$')
+    plt.xlim(x_lo,x_hi)
+    y_max = np.maximum(1.05*np.max(xVec0), 1.05*np.max(xVec2))
+    plt.ylim(0.,1.05*y_max)
     
     # Plot report probability
-    plt.subplot(2,1,1)
-    for i in range(x_count):
+    plt.subplot(4,1,2)
+    for i in range(x_count_cond):
         my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
         my_y = [0., ReportPrb[i], ReportPrb[i], 0.]
         plt.fill(my_x, my_y, 'b')
-    plt.xlim(x_min,x_max)
+    plt.xlim(x_lo,x_hi)
     plt.ylim(0.,1.)
-    plt.xlabel('Latent health index')
-    plt.ylabel('Prob(h = ' + str(h) + ' | x)')
+    plt.ylabel(r'Prob($x = ' + str(h) + ' ~|~ h, k=' + str(k+1) + '$)')
     
-    # Plot distribution of latent health
-    plt.subplot(2,1,2)
-    for i in range(x_count):
+    # Plot product of prior and reporting probability
+    plt.subplot(4,1,3)
+    for i in range(x_count_cond):
         my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
-        if frame == 0:
-            top = xVec0[i]
-        elif frame < 3:
-            top = xVec1[i]
-        else:
-            top = xVec2[i]
+        top = xVec0[i]
         my_y = [0., top, top, 0.]
-        plt.fill(my_x, my_y, 'r')
-        if frame == 1:
-            bot = top
-            top = top = xVec0[i]
-            my_y = [bot, top, top, bot]
-            plt.fill(my_x, my_y, 'k')
-    plt.xlim(x_min,x_max)
+        plt.fill(my_x, my_y, 'm')
+        bot = top
+        top = xVec1[i]
+        my_y = [bot, top, top, bot]
+        plt.fill(my_x, my_y, 'silver')
+    plt.xlim(x_lo,x_hi)
     y_max = np.maximum(1.05*np.max(xVec0), 1.05*np.max(xVec2))
     plt.ylim(0.,1.05*y_max)
-    plt.xlabel('Latent health index')
-    plt.ylabel('Probability mass')
+    plt.ylabel(r'$g_k(h) \times $Prob$(x=' + str(h) +'$)')
+
+    # Plot posterior distribution of latent health
+    plt.subplot(4,1,4)
+    for i in range(x_count_cond):
+        my_x = [x_cuts[i], x_cuts[i], x_cuts[i+1], x_cuts[i+1]]
+        top = xVec2[i]
+        my_y = [0., top, top, 0.]
+        plt.fill(my_x, my_y, 'firebrick')
+    plt.ylabel(r'Posterior $g_k(h)$')
+    plt.xlim(x_lo,x_hi)
+    y_max = np.maximum(1.05*np.max(xVec0), 1.05*np.max(xVec2))
+    plt.ylim(0.,1.05*y_max)
+    plt.xlabel(r'Latent health index $h$')
     
-    if frame == 0:
-        plt.suptitle('Latent health: distribution at age ' + str(AgeNow))
-    elif frame == 1:
-        plt.suptitle('Latent health: observing h=' + str(h) + ' at age ' + str(AgeNow))
-    elif frame == 2:
-        plt.suptitle('Latent health: after observing h=' + str(h) + ' age ' + str(AgeNow))
-    elif frame == 3:
-        plt.suptitle('Latent health: SRHS adjustment at age ' + str(AgeNow))
-    
-    filename = '../Figures/ReportDemo' + str(frame) + '.pdf'
+    filename = '../Figures/ReportDemo.pdf'
     plt.savefig(filename)
     plt.show()
     print('Saved figure to ' + filename)
@@ -3298,8 +3370,8 @@ param_names = param_names_base + mixed_param_names + type_param_names + to_add
 if __name__ == '__main__':
     
     # Choose what kind of work to do
-    describe_data = False              # Print a description of the data to screen
-    test_function = True               # Run the LL function once and report timing
+    describe_data = True               # Print a description of the data to screen
+    test_function = False              # Run the LL function once and report timing
     make_figs = False                  # Produce selected figures and display on screen
     save_figs = False                  # Save those figures to disk (only relevant if ^^ is True)
     vary_one_param = False             # Produce a simple plot of LL function vs one model parameter

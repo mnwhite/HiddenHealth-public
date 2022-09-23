@@ -28,9 +28,9 @@ DisplayOpenCLinfo.py : Run this very short file first to make sure that opencl4p
 HiddenHealthEstimation.py : The main code for this project.  Due to some poor structural
     choices early on, a lot of figure-generating code also lives in this file.  To run
     the code, set the parameter file at line 19 to the desired specification (see below),
-    and set the boolean variables around line 3300 to choose what kind of work is done.
+    and set the boolean variables around line 3370 to choose what kind of work is done.
     If you want to produce figures, make sure to (un)comment the appropriate lines of
-    makeFigures() around line 1023 to choose which to make; figures will only be saved to
+    makeFigures() around line 1016 to choose which to make; figures will only be saved to
     disk if the save_figs option is set to True.
 
 HiddenHealthLL.cl : OpenCL kernels for the log-likelihood function and constructing
@@ -78,6 +78,8 @@ TwoStudyWomenOver23aParams.py : Model parameters for HRS & PSID data women.  Ann
 
 TwoStudyAllOver23aParams.py : Model parameters for HRS & PSID data, both sexes.  Annual frequency, basic model.
 
+TwoStudyTinyParams.py : Re-estimated main specification with only 15 latent health nodes.
+
 
 Each specification file defines the latent health grid parameters, the data file to be loaded,
 text labels and filename bases for results, exogenous parameters describing the structure of
@@ -95,10 +97,26 @@ Optimizers.py : Same, with some custom work.
 
 EvalCount.py : Electronic proof that I am a terrible programmer.
 
-UnusedCode/ : Directory with a bunch of old specifications that I experimented with at
+/UnusedCode : Directory with a bunch of old specifications that I experimented with at
     various points in the project's life-cycle.  Some of these might have outdated formatting
     and need to be updated with new/missing parameters for them to run properly.  These
     include versions of the HRS and PSID specifications at a biannual frequency, versions
     with all three panel datasets (the MEPS-SAQ, PSID, and HRS), and specifications with
     type heterogeneity but no mixed normal health shocks.
+
+MakeLatentHealthFile.py : Stripped down version of the main estimation file, intended to be
+    used by other researchers who want to either make a discretized latent health process for
+    their own structural model, or to make a "filtration dataset" that provides the model's
+    prediction of the distribution of latent health (and reporting type) for any combination
+    of sex, age, and sequence of recently reported SRHS. See the LatentHealthLite repository
+    for more detailed instructions on how to use this script.
+
+LoadLatentHealthProcess.py : Python module for reading a discretized latent health process
+    into memory, after constructing it with MakeLatentHealthFile.py.
+
+LoadLatentHealthProcess.m : Matlab script for reading a discretized latent health process
+    into memory, after constructing it with MakeLatentHealthFile.py.
+
+MergeLatentHealthFilter.do : Example Stata script for merging a "filtration dataset" created
+    with MakeLatentHealthFile.do into panel data.
  

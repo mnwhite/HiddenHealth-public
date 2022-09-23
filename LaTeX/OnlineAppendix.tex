@@ -53,47 +53,58 @@
             \newcommand{\R}{\mathbb{R}}
             
             \newcommand{\Health}{h}
-            \newcommand{\ExpHealth}{\overline{\Health}}
-            \newcommand{\Report}{x}
-            \newcommand{\Age}{j}
-            \newcommand{\AgeMin}{\underline{\Age}}
-            \newcommand{\AgeMax}{\overline{\Age}}
-            \newcommand{\AgeIncr}{\hat{\Age}}
-            \newcommand{\Corr}{\rho}
-            \newcommand{\HealthInitMean}{\mu_0}
-            \newcommand{\HealthInitStd}{\sigma_0}
-            \newcommand{\Cut}{\chi}
-            \newcommand{\MortParam}{\theta}
-            \newcommand{\CorrParam}{\gamma}
-            \newcommand{\HealthParam}{\beta}
-            \newcommand{\LatentParam}{\alpha}
-            \newcommand{\HealthShock}{\epsilon}
-            \newcommand{\ReportShock}{\eta}
-            \newcommand{\Data}{X}
-            \newcommand{\ParamVec}{\Delta}
-            \newcommand{\LivPrb}{\Omega}
-            \newcommand{\CumLivPrb}{\omega}
-            \newcommand{\TransPrb}{\Xi}
-            \newcommand{\HealthDstn}{\Lambda}
-            \newcommand{\ReportPrb}{\Psi}
-            \newcommand{\HealthDstnPcvd}{\widetilde{\Lambda}}
-            \newcommand{\LL}{\pi}
-            
-            \newcommand{\RootDir}{..}
-            \newcommand{\FigsDir}{\RootDir/Figures}
-            \newcommand{\TablesDir}{\RootDir/Tables}
+			\newcommand{\ExpHealth}{\overline{\Health}}
+			\newcommand{\TopHealth}{H}
+			\newcommand{\Report}{x}
+			\newcommand{\Age}{j}
+			\newcommand{\Sex}{s}
+			\newcommand{\AgeMin}{\underline{\Age}}
+			\newcommand{\AgeMax}{\overline{\Age}}
+			\newcommand{\AgeIncr}{\hat{\Age}}
+			\newcommand{\Corr}{\rho}
+			\newcommand{\HealthInitMean}{\mu_0}
+			\newcommand{\HealthInitStd}{\sigma_0}
+			\newcommand{\Cut}{\chi}
+			\newcommand{\DiscreteCut}{\zeta}
+			\newcommand{\MortParam}{\theta}
+			\newcommand{\CorrParam}{\gamma}
+			\newcommand{\HealthParam}{\beta}
+			\newcommand{\LatentParam}{\alpha}
+			\newcommand{\HealthShock}{\epsilon}
+			\newcommand{\ShockMean}{\mu}
+			\newcommand{\ShockStd}{\sigma}
+			\newcommand{\MixProb}{q}
+			\newcommand{\ReportShock}{\eta}
+			\newcommand{\TypeProb}{p}
+			\newcommand{\TypeProbPcvd}{\widetilde{\TypeProb}}
+			\newcommand{\ReportStd}{\varsigma}
+			\newcommand{\Data}{X}
+			\newcommand{\ParamVec}{\Delta}
+			\newcommand{\LivPrb}{\Omega}
+			\newcommand{\CumLivPrb}{\omega}
+			\newcommand{\TransPrb}{\Xi}
+			\newcommand{\HealthDstn}{\Lambda}
+			\newcommand{\ReportPrb}{\Psi}
+			\newcommand{\HealthDstnPcvd}{\widetilde{\Lambda}}
+			\newcommand{\LL}{\pi}
+			\newcommand{\RootDir}{..}
+			\newcommand{\FigsDir}{\RootDir/Figures}
+			\newcommand{\TablesDir}{\RootDir/Tables}
+           
 						
 \begin{document}
 
 \setcounter{table}{3}
 
-\setcounter{figure}{9}
+\setcounter{figure}{10}
+
+\setcounter{equation}{7}
 
 \appendix
 
 \section*{Online Appendix}
 
-Appendix~\ref{app:LitQuotes} expands on the discussion in Section~\ref{sec:StructuralSRHS} to provide more detailed references to how SRHS has been used to estimate or calibrate health dynamics in structural models. Appendix~\ref{app:MoreSpecs} presents additional specifications of the latent health model, including on the HRS, PSID, and MEPS data independently as well as a simplified model that drops two key features. Appendix~\ref{app:MoreFigs} provides many more figures related to those in the main paper, but were excluded for length and space considerations.
+Appendix~\ref{app:LitQuotes} expands on the discussion in Section~\ref{sec:StructuralSRHS} to provide more detailed references to how SRHS has been used to estimate or calibrate health dynamics in structural models. Appendix~\ref{app:Estimation} provides details on the numeric methods used to compute the log likelihood function for the latent health model, which were only summarized in Section~\ref{sec:Estimation}. Appendix~\ref{app:MoreSpecs} presents additional specifications of the latent health model, including on the HRS, PSID, and MEPS data independently as well as a simplified model that drops two key features. Appendix~\ref{app:MoreFigs} provides many more figures related to those in the main paper, but were excluded for length and space considerations.
 
 
 \section{Prior Structural Work Using SRHS}\label{app:LitQuotes}
@@ -120,6 +131,84 @@ In a related paper, \cite{AizawaFang20} model two-dimensional binary health, wit
 
 I know of only two dynamic structural models of health that do \textit{not} use a discrete representation with simple dynamics.  \cite{JungTran16} take the classic Grossman health capital model seriously, modeling health as a continuous variable with stochastic depreciation.  They use the SF-12v2 physical health index in the MEPS as their empirical measure of health, mapped to a grid with 15 nodes (p142), and use frequency counts to calibrate the likelihood of health shocks of various magnitudes.  Using data from the HRS, \cite{White18} constructs a continuous measure of health by estimating an ordered probit of SRHS on a long list of specific health outcomes, then projecting fitted values onto the unit interval.  The health transition process is estimated by SMM in the main estimation step, fitting age-profiles of mean health by income group and initial health status.  Some evidence of measurement error in the constructed health index is found, but an order of magnitude smaller than estimated in this paper-- a standard deviation about one-fifth that of a one-period health shock, rather than twice as great as with SRHS.
 
+
+\section{Estimation Details}\label{app:Estimation}
+
+As summarized in Section~\ref{sec:Estimation}, evaluating the log likelihood function for a given parameter set involves repeated calculating the probability of observing SRHS reports $\Report_{it}$ in the data, accounting for the econometrician's distribution over latent health and reporting type, and updating this distribution over the course of a respondent's panel data. This appendix provides a more complete accounting of the numeric methods used in this computation.
+
+Restating equation \eqref{ReportProb} from the main paper, the probability of any given SRHS report conditional on the econometrician's probabilities over reporting types $\TypeProbPcvd_k$ and latent health conditional on reporting type $g_k(\Health)$ (for $k=1,\cdots,K$) is:
+\begin{equation*}
+\Prob \left( \Report_{iz} ~\big|~ \left\{\TypeProbPcvd_k \right\}, \left\{g_k(\cdot) \right\} \right) = \sum_{k=1}^K \TypeProbPcvd_k \int_{-\infty}^{\infty} \bigg[ \underbrace{\Phi \left(\frac{\Cut_{\Report} - \LatentParam_0 - \LatentParam_1 \Health}{\ReportStd_k} \right) - \Phi \left(\frac{\Cut_{\Report-1} - \LatentParam_0 - \LatentParam_1 \Health}{\ReportStd_k} \right)}_{= \Prob(\Report_{iz} ~|~ \Health_{iz} = \Health, ~ \sigma_i=\ReportStd_k)} \bigg]  g_k(\Health) d \Health.
+\end{equation*}
+
+To compute such probabilities, the range of latent health values that individuals can reasonably attain under parameters $\Delta$ is discretized into $N$ intervals, and then replicated by the number of types $K$.  When calculating the likelihood of individual $i$'s observed sequence of SRHS, I represent the econometrician's distribution over $i$'s latent health and reporting type as a stochastic vector denoted $\HealthDstnPcvd_i$, a discretization of both $(\TypeProbPcvd_1,\cdots,\TypeProbPcvd_K)$ and $(g_1,\cdots,g_K)$.
+
+When individuals enter the model at age $\AgeMin$, the econometrician's discretized distribution over the unobserved variables can be constructed using $\HealthInitMean$ and $\HealthInitStd$ and the type probabilities $\TypeProb = (\TypeProb_1,\cdots,\TypeProb_K)$. Denoting the cut points of the discretization as $\{\DiscreteCut_n\}_{n=0}^N$, the initial distribution of unobserved variables at model entry for each sex is:\footnote{For all specifications, I used $N=120$ evenly spaced intervals on $[-12,28]$, censoring well under one millionth of the population at any age-- usually orders of magnitude less. With $K=3$ reporting error types, the discretization of unobserved variables has 360 nodes. When computing transition probabilities, I treat the topmost and bottommost discrete cuts as $\DiscreteCut_0,\DiscreteCut_N=\pm \infty$ so that all probability mass is accounted for.}
+\begin{equation}
+\HealthDstn_{\AgeMin}(\Sex,k,n) = \TypeProb_k \left(\Phi((\DiscreteCut_n - \HealthInitMean)/\HealthInitStd) - \Phi((\DiscreteCut_{n-1} - \HealthInitMean)/\HealthInitStd) \right) ~~\text{for}~ s=0,1; ~~ k=1,\cdots,K; ~~ n=1,\cdots,N.
+\end{equation}
+
+The vast majority of respondents in the data are not immediately observed upon model entry, but instead first appear in the data later in life, after being exposed to a sequence of health shocks and surviving all mortality shocks to that point. To calculate the econometrician's discretized distribution over unobserved variables \textit{just before} first observing someone who has lived to age $\Age > \AgeMin$, I construct two additional arrays.
+
+First, for each age between $\AgeMin$ and the highest age observed in the data $\AgeMax$, $\LivPrb_\Age$ is a $2 \times KN$ array of survival probabilities from age $\Age$ to $\Age + \AgeIncr$ on the discretized space using \eqref{Mortality}:
+\begin{equation}
+\LivPrb_\Age(\Sex,k,n) = \Phi(-f(\Sex,(\DiscreteCut_n+\DiscreteCut_{n-1})/2, \Age) ~~\text{for}~ s=0,1; ~~ k=1,\cdots,K; ~~n=1,\cdots,N; ~~ \Age=\AgeMin,\AgeMin+\AgeIncr,\cdots,\AgeMax.
+\end{equation}
+Second, the $2 \times N \times N$ survival-conditional Markov transition matrix $\TransPrb_\Age$ among discretized latent health states from age $\Age$ to $\Age + \AgeIncr$ is constructed using the autoregressive parameters $\CorrParam$, expected health parameters $\HealthParam$, and health shock distibution parameters $(\MixProb,\ShockMean,\ShockStd)$:
+\begin{equation}
+\TransPrb_\Age(\Sex,n,n') = \sum_{\ell=1}^L \MixProb_\ell \left[ \Phi \left( \frac{\DiscreteCut_{n'} - \ShockMean_\ell - \Corr_{\Age} \hat{\Health}_n - (1-\Corr_{\Age})\ExpHealth_{\Sex\Age}}{\ShockStd_\ell} \right) - \Phi \left( \frac{\DiscreteCut_{n'-1} - \ShockMean_\ell - \Corr_{\Age} \hat{\Health}_n - (1-\Corr_{\Age})\ExpHealth_{\Sex\Age}}{\ShockStd_\ell} \right) \right]
+\end{equation}
+\begin{equation*}
+\text{for}~~s =0,1; ~~~ n=1,\cdots,N; ~~~ n'=1,\cdots,N; ~~~ \Corr_{\Age} ~\text{and}~ \ExpHealth_{\Sex\Age} ~\text{as given in \eqref{HealthNext}}; ~~~ \hat{\Health}_n = \frac{\DiscreteCut_n + \DiscreteCut_{n-1}}{2}.
+\end{equation*}
+Conditional on sex, $\TransPrb_\Age(\Sex)$ can be replicated $K$ times along the (block) diagonal of a $KN \times KN$ matrix denoted $\overline{\TransPrb}_\Age(\Sex)$, which is filled with zero on its off-diagonal blocks-- individuals can't change reporting types. This larger Markov matrix represents the overall transition probabilities among discretized unobserved variables from one age to the next.
+
+The discretized distribution of latent health $\Health$ and reporting error type $k$ at all subsequent ages, conditional on surviving to that age, can then be constructed using $\LivPrb_\Age$ and $\overline{\TransPrb}_\Age$ by iterating over age and sex according to:\footnote{The Hadamard product (circle-dot) represents element-wise multiplication.}
+\begin{equation}
+\HealthDstn_{\Age + \AgeIncr}(\Sex) = \left[ (\HealthDstn_{\Age}(\Sex) \odot \LivPrb_\Age(\Sex)) / (\HealthDstn_{\Age}(\Sex) \cdot \LivPrb_\Age(\Sex)) \right] \times \overline{\TransPrb}_{\Age}(\Sex)^T ~~\text{for}~ \Sex=0,1; ~~ \Age = \AgeMin, \AgeMin+\AgeIncr, \cdots, \AgeMax-\AgeIncr.
+\end{equation}
+The factor in brackets represents the distribution of latent health (and reporting error type) among individuals who do not die at the end of age $\Age$, just before the latent health transition occurs; post-multiplying by the Markov matrix for discretized health for this sex executes that transition. For an individual who is first observed in the data at age $\Age$, $\HealthDstn_\Age(s)$ represents the econometrician's distribution over their unobserved variables. In terms of the probability of observing a particular value of SRHS in \eqref{ReportProb}, $\HealthDstn_\Age(s)$ is a discretized representation of $(\TypeProb_1,\cdots,\TypeProb_K)$ and $(g_1,\cdots,g_K)$, conditioning on the fact that a person of this sex has survived.
+
+To compute the term in brackets inside the integral in \eqref{ReportProb}, I construct a $H \times KN$ matrix of reporting probabilities $\ReportPrb$ using the latent parameters $\LatentParam$ and the cut points $\Cut$:
+\begin{equation}
+\ReportPrb(\Report,k,n) = \Phi \left(\frac{\Cut_{\Report} - \LatentParam_0 - \LatentParam_1 \hat{\Health}_n}{\ReportStd_k} \right) - \Phi \left(\frac{\Cut_{\Report-1} - \LatentParam_0 - \LatentParam_1 \hat{\Health}_n}{\ReportStd_k} \right)
+\end{equation}
+\begin{equation*}
+\text{for}~~x = 1,\cdots,H; ~~~ k=1,\cdots,K; ~~~ n=1,\cdots,N; ~~~ \text{and}~~ \hat{\Health}_n = \frac{\DiscreteCut_n + \DiscreteCut_{n-1}}{2}.
+\end{equation*}
+The element $\ReportPrb(\Report,k,n)$ represents the probability that an observed individual of reporting error type $k$ will report SRHS of $\Report_{it}=x$ if their latent health is in the $n$th interval.  Note that reporting probabilities do not depend on age nor sex. If the econometrician's distribution over unobserved variables is currently $\HealthDstnPcvd_{i}$, then the probability of $i$ reporting their categorical health as $\Report_{it}$ is simply $\HealthDstnPcvd_{i} \cdot \ReportPrb(\Report_{it})$; this reduces right-hand side of \eqref{ReportProb} to a mere vector product.
+
+To calculate the contribution to log likelihood from individual $i$'s sequence of SRHS, I begin by initializing the distribution of $i$'s unobserved variables $\HealthDstnPcvd_{i}$ to the distribution $\HealthDstn_{\Age}(\Sex_i)$ for the first age at which they are observed-- the prior distribution of their latent health under parameters $\ParamVec$ given that $i$ has survived to this age.  I also initialize $\LL_i$ to zero, and the ``cumulative survival probability'' $\CumLivPrb_i$ is set at one, representing the probability that $i$ has not died since the last observation incorporated into $\LL_i$.
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics{\FigsDir/MortalityDemo.pdf}
+	\caption{Graphical summary of one period's survivorship into the log-likelihood function. Top panel shows prior distribution of latent health; second panel shows mortality probability for each discrete latent health level. Purple area in third panel represents mass of decedents; total size of gray area is survivorship. Bottom panel normalizes gray distribution to generate posterior distribution after accounting for mortality this period.}\label{fig:MortalityDemo}
+\end{figure}
+
+From these initial conditions, I iterate over time $t$. If $i$ is observed alive at time $t$, then $\CumLivPrb_i$ is incorporated into $\LL_i$ and reset to one; if $i$ is reported as dead ($\Report_{it} = 0$), the additive complement of $\CumLivPrb_{i}$ is accumulated into $\LL_i$ and its computation is complete.
+\begin{equation}\label{LivPrbLL}
+\LL_i := \begin{cases}
+\LL_{i} + \log(\CumLivPrb_i) & \text{if } \Report_{it} \geq 1 \\
+\LL_{i} + \log(1 - \CumLivPrb_i) & \text{if } \Report_{it} = 0 \\
+\end{cases}, \qquad \CumLivPrb_i := 1.
+\end{equation}
+Next, the probability of $i$ reporting $\Report_{it}$ (given the econometrician's distribution $\HealthDstnPcvd_{i}$) is accumulated into $\LL_i$, and the econometrician's distribution is updated using Bayes' rule:
+\begin{equation}\label{ReportPrbLL}
+\LL_i := \LL_i + \log(\HealthDstnPcvd_{i} \cdot \ReportPrb(\Report_{it})), \qquad \HealthDstnPcvd_{i} := (\HealthDstnPcvd_{i} \odot \ReportPrb(\Report_{it})) / (\HealthDstnPcvd_{i} \cdot \ReportPrb(\Report_{it})).
+\end{equation}
+If $\Report_{it}$ is not observed this period (e.g.\ because $i$ was not surveyed or refused to answer), then both \eqref{LivPrbLL} and \eqref{ReportPrbLL} are skipped.
+
+To move individual $i$ to period $t+1$, I incorporate the survival probability into $\CumLivPrb_{i}$, then update the  distribution $\HealthDstnPcvd_{i}$ using survival probabilities $\LivPrb_\Age(\Sex_i)$ and the Markov matrix $\overline{\TransPrb}_\Age(\Sex_i)$:
+\begin{equation}\label{NextPrdLL}
+\CumLivPrb_i := \CumLivPrb_i (\HealthDstnPcvd_{i} \cdot \LivPrb_\Age(\Sex_i)), \qquad \HealthDstnPcvd_{i} := \left[ (\HealthDstnPcvd_{i} \odot \LivPrb_\Age(\Sex_i)) / (\HealthDstnPcvd_{i} \cdot \LivPrb_\Age(\Sex_i)) \right] \times \overline{\TransPrb}_\Age(\Sex_i)^T, \qquad \Age_i := \Age_i + \AgeIncr.
+\end{equation}
+The incorporation of survivorship into the log-likelihood function is graphically summarized in Figure~\ref{fig:MortalityDemo}, analogous to Figure~\ref{fig:ReportDemo} in the main paper.
+
+The steps in \eqref{LivPrbLL}, \eqref{ReportPrbLL}, and \eqref{NextPrdLL} are repeated until the last observation of $i$ is included in $\LL_i$, incorporating all $Z_i$ reports of categorical health (potentially including an observed death). As usual, the overall log likelihood of the parameter vector $\ParamVec$ given data $\Data$ is the sum across each individual's log likelihood contribution:
+\begin{equation}
+\mathcal{L}(\ParamVec~|~\Data) = \sum_{i=1}^{I} \LL_i.
+\end{equation}
 
 
 \section{Additional Specifications}\label{app:MoreSpecs}
@@ -265,43 +354,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T1naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T2naiveNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Naive1AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T2naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T4naiveNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Naive2AheadPoor}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T3naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T6naiveNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Naive3AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T4naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T8naiveNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Naive4AheadPoor}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T5naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T10naiveNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Naive5AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T6naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T12naiveNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Naive6AheadPoor}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T7naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T14naive.pdf}
 		\caption{Seven waves ahead}\label{fig:Naive7AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T8naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T16naive.pdf}
 		\caption{Eight waves ahead}\label{fig:Naive8AheadPoor}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``poor'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransPR}
@@ -310,43 +399,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T1naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T2naiveNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Naive1AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T2naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T4naiveNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Naive2AheadFair}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T3naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T6naiveNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Naive3AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T4naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T8naiveNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Naive4AheadFair}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T5naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T10naiveNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Naive5AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T6naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T12naiveNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Naive6AheadFair}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T7naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T14naive.pdf}
 		\caption{Seven waves ahead}\label{fig:Naive7AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T8naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T16naive.pdf}
 		\caption{Eight waves ahead}\label{fig:Naive8AheadFair}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``fair'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransFR}
@@ -355,43 +444,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T1naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T2naiveNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Naive1AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T2naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T4naiveNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Naive2AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T3naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T6naiveNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Naive3AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T4naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T8naiveNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Naive4AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T5naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T10naiveNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Naive5AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T6naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T12naiveNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Naive6AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T7naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T14naive.pdf}
 		\caption{Seven waves ahead}\label{fig:Naive7AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T8naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T16naive.pdf}
 		\caption{Eight waves ahead}\label{fig:Naive8AheadGood}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``good'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransGD}
@@ -400,43 +489,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T1naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T2naiveNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Naive1AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T2naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T4naiveNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Naive2AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T3naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T6naiveNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Naive3AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T4naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T8naiveNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Naive4AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T5naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T10naiveNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Naive5AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T6naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T12naiveNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Naive6AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T7naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T14naive.pdf}
 		\caption{Seven waves ahead}\label{fig:Naive7AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T8naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T16naive.pdf}
 		\caption{Eight waves ahead}\label{fig:Naive8AheadVeryGood}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``very good'' health in the baseline period in the PSID \& HRS data (solid) vs simple dynamics (dash-dot).}\label{fig:NaiveTransVGa}
@@ -445,43 +534,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T1naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T2naiveNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Naive1AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T2naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T4naiveNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Naive2AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T3naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T6naiveNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Naive3AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T4naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T8naiveNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Naive4AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T5naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T10naiveNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Naive5AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T6naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T12naiveNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Naive6AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T7naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T14naive.pdf}
 		\caption{Seven waves ahead}\label{fig:Naive7AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T8naiveNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T16naive.pdf}
 		\caption{Eight waves ahead}\label{fig:Naive8AheadExcellent}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``excellent'' health in the baseline period in the PSID \& HRS data (solid) vs simple (dash-dot).}\label{fig:NaiveTransEX}
@@ -490,43 +579,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T2modelNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Model1AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T4modelNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Model2AheadPoor}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T6modelNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Model3AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T8modelNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Model4AheadPoor}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T10modelNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Model5AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T12modelNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Model6AheadPoor}
 	\end{subfigure}
 
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T14modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T14model.pdf}
 		\caption{Seven waves ahead}\label{fig:Model7AheadPoor}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T16modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH1T16model.pdf}
 		\caption{Eight waves ahead}\label{fig:Model8AheadPoor}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``poor'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransPR}
@@ -535,43 +624,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T2modelNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Model1AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T4modelNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Model2AheadFair}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T6modelNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Model3AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T8modelNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Model4AheadFair}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T10modelNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Model5AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T12modelNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Model6AheadFair}
 	\end{subfigure}
 
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T14modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T14model.pdf}
 		\caption{Seven waves ahead}\label{fig:Model7AheadFair}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T16modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH2T16model.pdf}
 		\caption{Eight waves ahead}\label{fig:Model8AheadFair}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``fair'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransFR}
@@ -580,43 +669,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T2modelNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Model1AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T4modelNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Model2AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T6modelNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Model3AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T8modelNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Model4AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T10modelNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Model5AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T12modelNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Model6AheadGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T14modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T14model.pdf}
 		\caption{Seven waves ahead}\label{fig:Model7AheadGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T16modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH3T16model.pdf}
 		\caption{Eight waves ahead}\label{fig:Model8AheadGood}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``good'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransGD}
@@ -625,43 +714,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T2modelNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Model1AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T4modelNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Model2AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T6modelNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Model3AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T8modelNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Model4AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T10modelNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Model5AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T12modelNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Model6AheadVeryGood}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T14modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T14model.pdf}
 		\caption{Seven waves ahead}\label{fig:Model7AheadVeryGood}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T16modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH4T16model.pdf}
 		\caption{Eight waves ahead}\label{fig:Model8AheadVeryGood}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``very good'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransVGa}
@@ -670,43 +759,43 @@ Finally, Figure~\ref{fig:ChangeSRHS} plots the model-predicted probability of re
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T2modelNoLeg.pdf}
 		\caption{One wave ahead}\label{fig:Model1AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T4modelNoLeg.pdf}
 		\caption{Two waves ahead}\label{fig:Model2AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T6modelNoLeg.pdf}
 		\caption{Three waves ahead}\label{fig:Model3AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T8modelNoLeg.pdf}
 		\caption{Four waves ahead}\label{fig:Model4AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T10modelNoLeg.pdf}
 		\caption{Five waves ahead}\label{fig:Model5AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
+	\begin{subfigure}[b]{0.48\textwidth}
 		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T12modelNoLeg.pdf}
 		\caption{Six waves ahead}\label{fig:Model6AheadExcellent}
 	\end{subfigure}
 	
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T14modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T14model.pdf}
 		\caption{Seven waves ahead}\label{fig:Model7AheadExcellent}
 	\end{subfigure}
 	~
-	\begin{subfigure}[b]{0.45\textwidth}
-		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T16modelNoLeg.pdf}
+	\begin{subfigure}[b]{0.48\textwidth}
+		\includegraphics[width=\textwidth]{\FigsDir/TwoStudyOver23AllTransH5T16model.pdf}
 		\caption{Eight waves ahead}\label{fig:Model8AheadExcellent}
 	\end{subfigure}
 	\caption{Cumulative distribution of SRHS by age conditional on reporting ``excellent'' health in the baseline period in the PSID \& HRS data (solid) vs estimated model (dashed).}\label{fig:ModelTransEX}
