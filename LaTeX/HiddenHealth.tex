@@ -154,7 +154,7 @@ The estimation method for the latent health model exploits long sequences of SRH
 
 In contrast to the latent health model, models that treat SRHS as the true health state significantly underestimate the stability of health over the course of an individual's life. By interpreting a change in SRHS as a true change in health and considering only one-wave-ahead transitions, the longer run dynamics of health are not accurately reproduced in such models. Consider two respondents with identical observed data, both of whom reported ``good'' health in the most recent wave of a panel study; they differ only in that one reported ``fair'' health in the prior wave, while the other reported ``very good'' health. A model that takes SRHS literally would predict that the two respondents have the same likelihood of reporting ``very good'' health in the \textit{next} wave, contrary to empirical evidence. Alternatively, a model that incorporates exogenously heterogeneous health dynamics across individuals (e.g.\ through genetic variation) but treats SRHS as ``true health'' might predict different probabilities over subsequent SRHS for the two respondents, but based on a potentially spurious inference about differences their health process.
 
-The modeling choice to use \textit{reporting} error to account for short run volatility in SRHS, rather than transitory shocks to true health,\footnote{E.g.\ an acute illness, broken bone, or other temporary condition, the interpretation in \cite{Halliday11}.} is motived by \cite{Crossley02}, who find that 28\% of respondents change their SRHS if asked twice in the same interview.  The extent of churn in SRHS before and after taking a relatively short survey about specific health conditions suggests that reporting error is present in SRHS responses. Likewise, the Medical Expenditure Panel Study (MEPS) mails a short survey to respondents after waves 2 and 4 of their panel, the Self-Administered Questionnaire (SAQ), which includes a nearly identical SRHS question. Empirical transition probabilities in the two week span between the MEPS interview and the SAQ are similar to those of a six month gap between interview waves, suggesting that the reported changes do not reflect the dynamics of health itself. To provide support for the modeling assumption, I show in Section \ref{sec:Predictions} that the respondents who the latent health model judges to be \textit{least accurate} in reporting their SRHS also exhibit the lowest correlation between SRHS and an objective measure of health (and vice versa).
+The modeling choice to use \textit{reporting} error to account for short run volatility in SRHS, rather than transitory shocks to true health,\footnote{E.g.\ an acute illness, broken bone, or other temporary condition, the interpretation in \cite{Halliday11}.} is motivated by \cite{Crossley02}, who find that 28\% of respondents change their SRHS if asked twice in the same interview.  The extent of churn in SRHS before and after taking a relatively short survey about specific health conditions suggests that reporting error is present in SRHS responses. Likewise, the Medical Expenditure Panel Study (MEPS) mails a short survey to respondents after waves 2 and 4 of their panel, the Self-Administered Questionnaire (SAQ), which includes a nearly identical SRHS question. Empirical transition probabilities in the two week span between the MEPS interview and the SAQ are similar to those of a six month gap between interview waves, suggesting that the reported changes do not reflect the dynamics of health itself. To provide support for the modeling assumption, I show in Section \ref{sec:Predictions} that the respondents who the latent health model judges to be \textit{least accurate} in reporting their SRHS also exhibit the lowest correlation between SRHS and an objective measure of health (and vice versa).
 
 The model presented here follows very recent work by \cite{HosseiniZhao21a}, who construct a ``frailty index'' by summing indicators of adverse health-- a composite measure based on objective reports. They compare the dynamics of the frailty index with those of SRHS, finding that health is more persistent than indicated by SRHS changes, analogous to the implications of the latent health model. They estimate the dynamics of the frailty index using three panel surveys with fairly rich data on health conditions and medical history, generating a more refined and precise measure of each respondent's health at a point in time. The latent health model is estimated on data from the same three surveys, but uses \textit{only} SRHS to gauge a respondent's true health. It can thus be applied to panel datasets with only cursory health information but still extract a more refined view of health dynamics.
 
@@ -247,12 +247,19 @@ Individual $i$ enters the model at age $\Age_{it}=\AgeMin$ in some discrete time
 
 When an individual of sex $\Sex_i \in \{0,1\}$ enters the model, their initial latent health status is drawn from a normal distribution with mean $\HealthInitMean$ and standard deviation $\HealthInitStd$. Moreover, they are randomly assigned to one of $K$ discrete types according to probabilities $(\TypeProb_1,\cdots,\TypeProb_K)$, which determines the extent of their health reporting error, as standard deviation $\ReportStd_k$.
 \begin{equation}\label{HealthInit}
-\Age_{it}=\AgeMin \Longrightarrow \Health_{it} \sim N(\HealthInitMean, \HealthInitStd^2), \qquad k_i \sim \text{Discrete}\left((1,\TypeProb_1),\cdots (K,\TypeProb_K) \right).
+\Age_{it}=\AgeMin \Longrightarrow \Health_{it} \sim N(\HealthInitMean, \HealthInitStd^2),
 \end{equation}
+\begin{equation*}
+k_i \sim \text{Discrete}\left((1,\TypeProb_1),\cdots (K,\TypeProb_K) \right).
+\end{equation*}
+
 
 In any period in which living individual $i$ is observed, their SRHS $\Report_{it}$ is randomly determined as a linear function of their latent health, subject to a mean zero normal error term and categorical cut points $\Cut = (\Cut_1, \cdots, \Cut_{\TopHealth-1})$.
 \begin{equation}\label{Report}
-\Report^*_{it} = \LatentParam_0 + \LatentParam_1 \Health_{it} + \ReportShock_{it}, \qquad \ReportShock_{it} \sim N(0,\ReportStd_k^2), \qquad \Report_{it} = 1 + \sum_{\ell = 1}^{\TopHealth-1} \mathbf{1}(\Report^*_{it} \geq \Cut_\ell). 
+\Report^*_{it} = \LatentParam_0 + \LatentParam_1 \Health_{it} + \ReportShock_{it}, \qquad \ReportShock_{it} \sim N(0,\ReportStd_k^2). 
+\end{equation}
+\begin{equation}
+\Report_{it} = 1 + \sum_{\ell = 1}^{\TopHealth-1} \mathbf{1}(\Report^*_{it} \geq \Cut_\ell).
 \end{equation}
 
 Individual $i$'s survival from period $t$ to $t+1$ is determined by a probit on a polynomial of their age and latent health, with a partial interaction for sex:
@@ -264,11 +271,17 @@ f(\Sex_i,\Health_{it}, \Age_{it}) = \MortParam_0 + \MortParam_\Sex \Sex_i + \Mor
 \end{equation*}
 
 If $i$ does not die, their latent health in period $t+1$ is drawn from an autoregressive process, subject to a health shock-- a random innovation to latent health-- with zero mean and unit variance (specified as a mixed normal distribution). Both the correlation coefficient and the auto-regressive level are (transformed) polynomial functions of their age.
+\begin{equation*}
+\Health_{it+1} = \Corr_{\Age} \Health_{it} + (1-\Corr_{\Age}) \ExpHealth_{\Sex\Age} + \HealthShock_{it+1},
+\end{equation*}
 \begin{equation}\label{HealthNext}
-\Health_{it+1} = \Corr_{\Age} \Health_{it} + (1-\Corr_{\Age}) \ExpHealth_{\Sex\Age} + \HealthShock_{it+1}, ~~~ \HealthShock_{it+1} \sim \text{Mix}((N(\ShockMean_1,\ShockStd_1^2),\MixProb_1), \cdots (N(\ShockMean_L,\ShockStd_L^2),\MixProb_L)),
+\HealthShock_{it+1} \sim \text{Mix}((N(\ShockMean_1,\ShockStd_1^2),\MixProb_1), \cdots (N(\ShockMean_L,\ShockStd_L^2),\MixProb_L)),
 \end{equation}
 \begin{equation*}
-\ExpHealth_{\Sex\Age} = \HealthParam_0 + \HealthParam_\Sex \Sex_i + (\HealthParam_1 + \HealthParam_{\Age\Sex} \Sex_i) \Age_{it} + \HealthParam_2 \Age_{it}^2 + \HealthParam_3 \Age_{it}^3 + \HealthParam_4 \Age_{it}^4, ~~~~ \Corr_{\Age} = 1 - 1 \big/ (1 + \exp(\CorrParam_0 + \CorrParam_1 \Age_{it} + \CorrParam_2 \Age_{it}^2 + \CorrParam_3 \Age_{it}^3)).
+\ExpHealth_{\Sex\Age} = \HealthParam_0 + \HealthParam_\Sex \Sex_i + (\HealthParam_1 + \HealthParam_{\Age\Sex} \Sex_i) \Age_{it} + \HealthParam_2 \Age_{it}^2 + \HealthParam_3 \Age_{it}^3 + \HealthParam_4 \Age_{it}^4,
+\end{equation*}
+\begin{equation*}
+ \Corr_{\Age} = 1 - 1 \big/ (1 + \exp(\CorrParam_0 + \CorrParam_1 \Age_{it} + \CorrParam_2 \Age_{it}^2 + \CorrParam_3 \Age_{it}^3)).
 \end{equation*}
 The proportions of the normal mixture are given by the vector of weights $(\MixProb_1,\cdots,\MixProb_L)$, and the corresponding conditional means $\ShockMean_\ell$ and variances $\ShockStd_\ell^2$ are set to generate an overall mean zero and unit variance health shock.
 
